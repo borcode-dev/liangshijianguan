@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { Inspector } from 'react-dev-inspector';
 import './globals.css';
 import { MainLayout } from '@/components/layout';
 
@@ -25,12 +24,9 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const isDev = process.env.COZE_PROJECT_ENV === 'DEV';
-
   return (
     <html lang="zh-CN">
       <body className="antialiased">
-        {isDev && <Inspector />}
         <MainLayout>{children}</MainLayout>
       </body>
     </html>
