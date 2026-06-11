@@ -27,32 +27,24 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
-import { DrillDownGrowthMap, cityGrowthData } from '@/components/map/drill-down-growth-map';
+import dynamic from 'next/dynamic';
+import { cityGrowthData } from '@/lib/data/growth-data';
 import { growthData } from '@/lib/data/mock-data';
 import { toast } from 'sonner';
 import { Download, TrendingUp, TrendingDown, BarChart2, MapPin } from 'lucide-react';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
-} from 'chart.js';
-import { Line } from 'react-chartjs-2';
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
+const DynamicLine = dynamic(
+  () => import('react-chartjs-2').then((mod) => {
+    const { Chart, LineElement, PointElement, LinearScale, CategoryScale, Filler, Tooltip, Legend, Title } = require('chart.js');
+    Chart.register(LineElement, PointElement, LinearScale, CategoryScale, Filler, Tooltip, Legend, Title);
+    return mod.Line;
+  }),
+  { ssr: false, loading: () => <div className="h-[300px] flex items-center justify-center text-muted-foreground">图表加载中...</div> }
+);
+
+const DynamicDrillDownGrowthMap = dynamic(
+  () => import('@/components/map/drill-down-growth-map').then((mod) => mod.DrillDownGrowthMap),
+  { ssr: false, loading: () => <div className="h-[300px] flex items-center justify-center text-muted-foreground">地图加载中...</div> }
 );
 
 // 城市详情数据
@@ -307,7 +299,7 @@ export default function GrowthAnalysisPage() {
             <CardTitle className="text-base">全省长势分布地图（点击区域可下钻查看区县详情）</CardTitle>
           </CardHeader>
           <CardContent>
-            <DrillDownGrowthMap height="450px" />
+            <DynamicDrillDownGrowthMap height="450px" />
           </CardContent>
         </Card>
       </div>
@@ -319,7 +311,7 @@ export default function GrowthAnalysisPage() {
         </CardHeader>
         <CardContent>
           <div className="h-[280px]">
-            <Line
+            <DynamicLine
               data={chartData}
               options={{
                 responsive: true,
@@ -480,7 +472,7 @@ export default function GrowthAnalysisPage() {
               <div className="space-y-2">
                 <div className="text-sm font-medium">月度长势趋势</div>
                 <div className="h-[200px]">
-                  <Line
+                  <DynamicLine
                     data={{
                       labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
                       datasets: [

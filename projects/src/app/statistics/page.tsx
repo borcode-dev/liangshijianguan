@@ -27,6 +27,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import dynamic from 'next/dynamic';
 import {
   problemTypeDistribution,
   monthlyTrend,
@@ -43,29 +44,23 @@ import {
   LineChart,
   Lightbulb,
 } from 'lucide-react';
-import {
-  Chart as ChartJS,
-  ArcElement,
-  Tooltip,
-  Legend,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Filler,
-} from 'chart.js';
-import { Pie, Line } from 'react-chartjs-2';
 
-// 注册ChartJS组件
-ChartJS.register(
-  ArcElement,
-  Tooltip,
-  Legend,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Filler
+const DynamicPie = dynamic(
+  () => import('react-chartjs-2').then((mod) => {
+    const { Chart, ArcElement, Tooltip, Legend, Title } = require('chart.js');
+    Chart.register(ArcElement, Tooltip, Legend, Title);
+    return mod.Pie;
+  }),
+  { ssr: false, loading: () => <div className="h-[300px] flex items-center justify-center text-muted-foreground">图表加载中...</div> }
+);
+
+const DynamicLine = dynamic(
+  () => import('react-chartjs-2').then((mod) => {
+    const { Chart, LineElement, PointElement, LinearScale, CategoryScale, Filler, Tooltip, Legend, Title } = require('chart.js');
+    Chart.register(LineElement, PointElement, LinearScale, CategoryScale, Filler, Tooltip, Legend, Title);
+    return mod.Line;
+  }),
+  { ssr: false, loading: () => <div className="h-[300px] flex items-center justify-center text-muted-foreground">图表加载中...</div> }
 );
 
 // 饼图颜色映射
@@ -343,7 +338,7 @@ export default function StatisticsPage() {
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-center" style={{ maxHeight: '350px' }}>
-              <Pie data={pieData} options={pieOptions} />
+              <DynamicPie data={pieData} options={pieOptions} />
             </div>
           </CardContent>
         </Card>
@@ -356,7 +351,7 @@ export default function StatisticsPage() {
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-center" style={{ maxHeight: '350px' }}>
-              <Line data={lineData} options={lineOptions} />
+              <DynamicLine data={lineData} options={lineOptions} />
             </div>
           </CardContent>
         </Card>

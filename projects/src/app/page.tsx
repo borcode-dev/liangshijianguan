@@ -6,6 +6,7 @@ import { StatCard } from '@/components/shared';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import dynamic from 'next/dynamic';
 import {
   homeStatistics,
   alerts,
@@ -22,32 +23,24 @@ import {
   ChevronRight,
   TrendingUp,
 } from 'lucide-react';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-  PointElement,
-  LineElement,
-} from 'chart.js';
-import { Pie, Bar } from 'react-chartjs-2';
 import Link from 'next/link';
 
-// 注册 Chart.js 组件
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-  PointElement,
-  LineElement
+const DynamicPie = dynamic(
+  () => import('react-chartjs-2').then((mod) => {
+    const { Chart, ArcElement, Tooltip, Legend, Title } = require('chart.js');
+    Chart.register(ArcElement, Tooltip, Legend, Title);
+    return mod.Pie;
+  }),
+  { ssr: false, loading: () => <div className="h-[300px] flex items-center justify-center text-muted-foreground">图表加载中...</div> }
+);
+
+const DynamicBar = dynamic(
+  () => import('react-chartjs-2').then((mod) => {
+    const { Chart, BarElement, CategoryScale, LinearScale, Tooltip, Legend, Title } = require('chart.js');
+    Chart.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend, Title);
+    return mod.Bar;
+  }),
+  { ssr: false, loading: () => <div className="h-[300px] flex items-center justify-center text-muted-foreground">图表加载中...</div> }
 );
 
 export default function HomePage() {
@@ -182,7 +175,7 @@ export default function HomePage() {
           </CardHeader>
           <CardContent>
             <div className="h-[280px]">
-              <Pie
+              <DynamicPie
                 data={{
                   labels: spotProcessProgress.map((item) => item.name),
                   datasets: [
@@ -234,7 +227,7 @@ export default function HomePage() {
           </CardHeader>
           <CardContent>
             <div className="h-[280px]">
-              <Bar
+              <DynamicBar
                 data={{
                   labels: citySpotDistribution.slice(0, 7).map((item) => item.city),
                   datasets: [
