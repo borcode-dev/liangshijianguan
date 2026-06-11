@@ -1,0 +1,213 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --font-sans:
+    'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', ui-sans-serif,
+    system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+    'Courier New', monospace;
+  --font-serif:
+    'Noto Serif SC', 'Songti SC', 'SimSun', ui-serif, Georgia, Cambria,
+    'Times New Roman', Times, serif;
+}
+
+:root {
+  --radius: 0.5rem;
+  /* 页面背景色 #F5F7FA */
+  --background: oklch(0.98 0.005 260);
+  --foreground: oklch(0.145 0.015 260);
+  /* 卡片背景 #FFFFFF */
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0.015 260);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0.015 260);
+  /* 主色 #1A5C9A 深蓝色 */
+  --primary: oklch(0.45 0.15 250);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.96 0.01 250);
+  --secondary-foreground: oklch(0.25 0.02 250);
+  --muted: oklch(0.96 0.005 260);
+  --muted-foreground: oklch(0.5 0.01 260);
+  --accent: oklch(0.96 0.01 250);
+  --accent-foreground: oklch(0.25 0.02 250);
+  /* 危险色 #F56C6C */
+  --destructive: oklch(0.65 0.2 25);
+  --border: oklch(0.91 0.005 260);
+  --input: oklch(0.91 0.005 260);
+  --ring: oklch(0.45 0.15 250);
+  /* 成功色 #67C23A */
+  --success: oklch(0.7 0.18 135);
+  --success-foreground: oklch(0.98 0 0);
+  /* 警示色 #E6A23C */
+  --warning: oklch(0.78 0.14 75);
+  --warning-foreground: oklch(0.2 0.02 75);
+  /* 信息色 #409EFF */
+  --info: oklch(0.7 0.15 250);
+  --info-foreground: oklch(0.98 0 0);
+  /* 图表颜色 */
+  --chart-1: oklch(0.45 0.15 250);
+  --chart-2: oklch(0.7 0.18 135);
+  --chart-3: oklch(0.78 0.14 75);
+  --chart-4: oklch(0.65 0.2 25);
+  --chart-5: oklch(0.6 0.15 280);
+  /* 侧边栏 - 白色背景 */
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.25 0.02 250);
+  --sidebar-primary: oklch(0.45 0.15 250);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.96 0.01 250);
+  --sidebar-accent-foreground: oklch(0.45 0.15 250);
+  --sidebar-border: oklch(0.91 0.005 260);
+  --sidebar-ring: oklch(0.45 0.15 250);
+}
+
+.dark {
+  --background: oklch(0.12 0.02 250);
+  --foreground: oklch(0.95 0.01 250);
+  --card: oklch(0.18 0.02 250);
+  --card-foreground: oklch(0.95 0.01 250);
+  --popover: oklch(0.18 0.02 250);
+  --popover-foreground: oklch(0.95 0.01 250);
+  --primary: oklch(0.55 0.18 250);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.22 0.02 250);
+  --secondary-foreground: oklch(0.95 0.01 250);
+  --muted: oklch(0.22 0.02 250);
+  --muted-foreground: oklch(0.65 0.01 250);
+  --accent: oklch(0.25 0.03 250);
+  --accent-foreground: oklch(0.95 0.01 250);
+  --destructive: oklch(0.65 0.2 25);
+  --border: oklch(0.28 0.02 250);
+  --input: oklch(0.28 0.02 250);
+  --ring: oklch(0.55 0.18 250);
+  --success: oklch(0.7 0.18 135);
+  --success-foreground: oklch(0.15 0.02 135);
+  --warning: oklch(0.78 0.14 75);
+  --warning-foreground: oklch(0.2 0.02 75);
+  --info: oklch(0.7 0.15 250);
+  --info-foreground: oklch(0.15 0.02 250);
+  --chart-1: oklch(0.55 0.18 250);
+  --chart-2: oklch(0.7 0.18 135);
+  --chart-3: oklch(0.78 0.14 75);
+  --chart-4: oklch(0.65 0.2 25);
+  --chart-5: oklch(0.6 0.15 280);
+  --sidebar: oklch(0.15 0.02 250);
+  --sidebar-foreground: oklch(0.88 0.01 250);
+  --sidebar-primary: oklch(0.55 0.18 250);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.22 0.03 250);
+  --sidebar-accent-foreground: oklch(0.88 0.01 250);
+  --sidebar-border: oklch(0.22 0.02 250);
+  --sidebar-ring: oklch(0.55 0.18 250);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+body {
+  @apply font-sans;
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: oklch(0.7 0.01 250);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.6 0.02 250);
+}
+
+/* 状态颜色样式 */
+.status-pending {
+  @apply text-warning bg-warning/10;
+}
+
+.status-processing {
+  @apply text-info bg-info/10;
+}
+
+.status-success {
+  @apply text-success bg-success/10;
+}
+
+.status-danger {
+  @apply text-destructive bg-destructive/10;
+}
+
+/* 风险等级样式 */
+.risk-high {
+  @apply text-destructive;
+}
+
+.risk-medium {
+  @apply text-warning;
+}
+
+.risk-low {
+  @apply text-success;
+}
