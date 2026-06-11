@@ -20,19 +20,10 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
-import dynamic from 'next/dynamic';
+import { ChartLine } from '@/components/shared/charts';
 import { growthAnalysis } from '@/lib/data/mock-data';
 import { toast } from 'sonner';
 import { Download, TrendingUp, TrendingDown, Minus, Leaf, BarChart3, MapPin } from 'lucide-react';
-
-const DynamicLine = dynamic(
-  () => import('react-chartjs-2').then((mod) => {
-    const { Chart, LineElement, PointElement, LinearScale, CategoryScale, Filler, Tooltip, Legend, Title } = require('chart.js');
-    Chart.register(LineElement, PointElement, LinearScale, CategoryScale, Filler, Tooltip, Legend, Title);
-    return mod.Line;
-  }),
-  { ssr: false, loading: () => <div className="h-[300px] flex items-center justify-center text-muted-foreground">图表加载中...</div> }
-);
 
 // 城市苗情详情
 interface SeedlingCityDetail {
@@ -278,7 +269,7 @@ export default function SeedlingPage() {
         </CardHeader>
         <CardContent>
           <div className="h-[280px]">
-            <DynamicLine
+            <ChartLine
               data={chartData}
               options={{
                 responsive: true,
@@ -436,7 +427,7 @@ export default function SeedlingPage() {
               <div className="space-y-2">
                 <div className="text-sm font-medium">月度长势趋势</div>
                 <div className="h-[200px]">
-                  <DynamicLine
+                  <ChartLine
                     data={{
                       labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
                       datasets: [

@@ -6,7 +6,7 @@ import { StatCard } from '@/components/shared';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import dynamic from 'next/dynamic';
+import { ChartPie, ChartBar } from '@/components/shared/charts';
 import {
   homeStatistics,
   alerts,
@@ -24,24 +24,6 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import Link from 'next/link';
-
-const DynamicPie = dynamic(
-  () => import('react-chartjs-2').then((mod) => {
-    const { Chart, ArcElement, Tooltip, Legend, Title } = require('chart.js');
-    Chart.register(ArcElement, Tooltip, Legend, Title);
-    return mod.Pie;
-  }),
-  { ssr: false, loading: () => <div className="h-[300px] flex items-center justify-center text-muted-foreground">图表加载中...</div> }
-);
-
-const DynamicBar = dynamic(
-  () => import('react-chartjs-2').then((mod) => {
-    const { Chart, BarElement, CategoryScale, LinearScale, Tooltip, Legend, Title } = require('chart.js');
-    Chart.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend, Title);
-    return mod.Bar;
-  }),
-  { ssr: false, loading: () => <div className="h-[300px] flex items-center justify-center text-muted-foreground">图表加载中...</div> }
-);
 
 export default function HomePage() {
   const [showAlertDialog, setShowAlertDialog] = useState(false);
@@ -175,7 +157,7 @@ export default function HomePage() {
           </CardHeader>
           <CardContent>
             <div className="h-[280px]">
-              <DynamicPie
+              <ChartPie
                 data={{
                   labels: spotProcessProgress.map((item) => item.name),
                   datasets: [
@@ -208,7 +190,7 @@ export default function HomePage() {
                     },
                     tooltip: {
                       callbacks: {
-                        label: (context) => {
+                        label: (context: any) => {
                           return `${context.label}: ${context.parsed}%`;
                         },
                       },
@@ -227,7 +209,7 @@ export default function HomePage() {
           </CardHeader>
           <CardContent>
             <div className="h-[280px]">
-              <DynamicBar
+              <ChartBar
                 data={{
                   labels: citySpotDistribution.slice(0, 7).map((item) => item.city),
                   datasets: [

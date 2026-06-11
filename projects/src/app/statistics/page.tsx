@@ -27,7 +27,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import dynamic from 'next/dynamic';
+import { ChartPie, ChartLine } from '@/components/shared/charts';
 import {
   problemTypeDistribution,
   monthlyTrend,
@@ -44,24 +44,6 @@ import {
   LineChart,
   Lightbulb,
 } from 'lucide-react';
-
-const DynamicPie = dynamic(
-  () => import('react-chartjs-2').then((mod) => {
-    const { Chart, ArcElement, Tooltip, Legend, Title } = require('chart.js');
-    Chart.register(ArcElement, Tooltip, Legend, Title);
-    return mod.Pie;
-  }),
-  { ssr: false, loading: () => <div className="h-[300px] flex items-center justify-center text-muted-foreground">图表加载中...</div> }
-);
-
-const DynamicLine = dynamic(
-  () => import('react-chartjs-2').then((mod) => {
-    const { Chart, LineElement, PointElement, LinearScale, CategoryScale, Filler, Tooltip, Legend, Title } = require('chart.js');
-    Chart.register(LineElement, PointElement, LinearScale, CategoryScale, Filler, Tooltip, Legend, Title);
-    return mod.Line;
-  }),
-  { ssr: false, loading: () => <div className="h-[300px] flex items-center justify-center text-muted-foreground">图表加载中...</div> }
-);
 
 // 饼图颜色映射
 const pieColors = [
@@ -338,7 +320,7 @@ export default function StatisticsPage() {
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-center" style={{ maxHeight: '350px' }}>
-              <DynamicPie data={pieData} options={pieOptions} />
+              <ChartPie data={pieData} options={pieOptions} />
             </div>
           </CardContent>
         </Card>
@@ -351,7 +333,7 @@ export default function StatisticsPage() {
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-center" style={{ maxHeight: '350px' }}>
-              <DynamicLine data={lineData} options={lineOptions} />
+              <ChartLine data={lineData} options={lineOptions} />
             </div>
           </CardContent>
         </Card>
