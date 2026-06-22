@@ -1,6 +1,6 @@
 'use client';
 
-import { Bell, HelpCircle, User, ChevronDown } from 'lucide-react';
+import { Bell, HelpCircle, User, ChevronDown, Shield, Building2, LogOut, SwitchCamera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -9,10 +9,37 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
+import { useAuth, PRESET_ACCOUNTS } from '@/lib/auth';
+import { useRouter } from 'next/navigation';
 
 export function Header() {
+  const { user, locationText, switchAccount, logout } = useAuth();
+  const router = useRouter();
+
+  const handleSwitchAccount = (account: typeof PRESET_ACCOUNTS[0]) => {
+    switchAccount({
+      id: account.id,
+      name: account.name,
+      role: account.role,
+      city: account.city,
+      cityCode: account.cityCode,
+    });
+    router.push('/');
+  };
+
+  const handleLogout = () => {
+    logout();
+    router.push('/login');
+  };
+
+  const roleLabel = user?.role === 'city' ? '市级' : '省级';
+  const roleColor = user?.role === 'city' ? 'bg-blue-500' : 'bg-amber-500';
+
   return (
     <header className="sticky top-0 z-50 flex h-[60px] items-center justify-between border-b bg-primary px-6 text-primary-foreground">
       {/* 左侧：Logo 和标题 */}
@@ -30,7 +57,13 @@ export function Header() {
           <span className="text-lg font-semibold">粮食安全监管系统</span>
         </div>
         <div className="h-5 w-px bg-white/20" />
-        <span className="text-sm text-white/80">当前位置：安徽省</span>
+        <span className="text-sm text-white/80">{locationText}</span>
+        {user && (
+          <Badge className={`${roleColor} text-white text-xs border-0`}>
+            {user.role === 'province' ? <Shield className="h-3 w-3 mr-1" /> : <Building2 className="h-3 w-3 mr-1" />}
+            {roleLabel}
+          </Badge>
+        )}
       </div>
 
       {/* 右侧：消息、帮助、用户 */}
@@ -93,19 +126,66 @@ export function Header() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="gap-2 text-primary-foreground hover:bg-white/10">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20">
-                <User className="h-4 w-4" />
+                {user?.role === 'city' ? <Building2 className="h-4 w-4" /> : <Shield className="h-4 w-4" />}
               </div>
-              <span className="text-sm">省级管理员</span>
+              <span className="text-sm">{user?.name || '未登录'}</span>
               <ChevronDown className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuLabel>我的账户</DropdownMenuLabel>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>
+              <div className="flex flex-col gap-1">
+                <span>{user?.name || '未登录'}</span>
+                <span className="text-xs text-muted-foreground font-normal">
+                  {user?.role === 'province' ? '省级管理员 · 全局监管' : `${user?.city || ''}管理员 · 属地管理`}
+                </span>
+              </div>
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem>个人中心</DropdownMenuItem>
             <DropdownMenuItem>修改密码</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive">退出登录</DropdownMenuItem>
+
+            {/* 切换账号 */}
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger className="gap-2">
+                <SwitchCamera className="h-4 w-4" />
+                切换账号
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="w-52 max-h-80 overflow-y-auto">
+                <DropdownMenuLabel className="text-xs text-muted-foreground">省级账号</DropdownMenuLabel>
+                {PRESET_ACCOUNTS.filter(a => a.role === 'province').map(account => (
+                  <DropdownMenuItem
+                    key={account.id}
+                    onClick={() => handleSwitchAccount(account)}
+                    className={user?.id === account.id ? 'bg-primary/10' : ''}
+                  >
+                    <Shield className="h-4 w-4 mr-2 text-amber-500" />
+                    {account.name}
+                    {user?.id === account.id && <Badge className="ml-auto text-xs" variant="outline">当前</Badge>}
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-xs text-muted-foreground">市级账号</DropdownMenuLabel>
+                {PRESET_ACCOUNTS.filter(a => a.role === 'city').map(account => (
+                  <DropdownMenuItem
+                    key={account.id}
+                    onClick={() => handleSwitchAccount(account)}
+                    className={user?.id === account.id ? 'bg-primary/10' : ''}
+                  >
+                    <Building2 className="h-4 w-4 mr-2 text-blue-500" />
+                    {account.name}
+                    {user?.id === account.id && <Badge className="ml-auto text-xs" variant="outline">当前</Badge>}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="text-destructive" onClick={handleLogout}>
+              <LogOut className="h-4 w-4 mr-2" />
+              退出登录
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
