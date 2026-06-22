@@ -15,11 +15,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { useAuth, PRESET_ACCOUNTS } from '@/lib/auth';
-import { useRouter } from 'next/navigation';
 
 export function Header() {
   const { user, locationText, switchAccount, logout } = useAuth();
-  const router = useRouter();
 
   const handleSwitchAccount = (account: typeof PRESET_ACCOUNTS[0]) => {
     switchAccount({
@@ -29,12 +27,12 @@ export function Header() {
       city: account.city,
       cityCode: account.cityCode,
     });
-    router.push('/');
+    window.location.href = '/liangshijianguan/';
   };
 
   const handleLogout = () => {
     logout();
-    router.push('/login');
+    window.location.href = '/liangshijianguan/login/';
   };
 
   const roleLabel = user?.role === 'city' ? '市级' : '省级';

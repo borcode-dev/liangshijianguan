@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth, PRESET_ACCOUNTS, ANHUI_CITIES, UserRole } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -20,7 +19,6 @@ import { Shield, Building2, User, Lock, ArrowRight, ChevronRight } from 'lucide-
 
 export default function LoginPage() {
   const { login } = useAuth();
-  const router = useRouter();
   const [selectedRole, setSelectedRole] = useState<UserRole>('province');
   const [selectedCity, setSelectedCity] = useState<string>('');
   const [username, setUsername] = useState('');
@@ -44,7 +42,7 @@ export default function LoginPage() {
           role: 'province',
         });
         toast.success('省级管理员登录成功');
-        router.push('/');
+        window.location.href = '/liangshijianguan/';
       } else {
         const city = ANHUI_CITIES.find(c => c.code === selectedCity);
         login({
@@ -55,7 +53,7 @@ export default function LoginPage() {
           cityCode: city?.code,
         });
         toast.success(`${city?.name}管理员登录成功`);
-        router.push('/');
+        window.location.href = '/liangshijianguan/';
       }
       setLoading(false);
     }, 500);
@@ -73,7 +71,7 @@ export default function LoginPage() {
         cityCode: account.cityCode,
       });
       toast.success(`${account.name}登录成功`);
-      router.push('/');
+      window.location.href = '/liangshijianguan/';
       setLoading(false);
     }, 300);
   };
