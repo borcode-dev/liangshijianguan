@@ -62,6 +62,7 @@ const AUTH_STORAGE_KEY = 'liangshi_auth_user';
 interface AuthContextType {
   user: UserInfo | null;
   isLoggedIn: boolean;
+  isInitialized: boolean;
   login: (user: UserInfo) => void;
   logout: () => void;
   switchAccount: (user: UserInfo) => void;
@@ -104,13 +105,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // 避免hydration mismatch，未mount时不渲染
   if (!mounted) {
-    return null;
+    return (
+      <AuthContext.Provider value={{
+        user: null,
+        isLoggedIn: false,
+        isInitialized: false,
+        login: () => {},
+        logout: () => {},
+        switchAccount: () => {},
+        locationText: '当前位置：安徽省',
+      }}>
+        {children}
+      </AuthContext.Provider>
+    );
   }
 
   return (
     <AuthContext.Provider value={{
       user,
       isLoggedIn: !!user,
+      isInitialized: true,
       login,
       logout,
       switchAccount,

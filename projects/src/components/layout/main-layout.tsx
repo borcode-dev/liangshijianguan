@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { SidebarNav } from './sidebar-nav';
 import { Header } from './header';
 import { Footer } from './footer';
@@ -11,14 +12,26 @@ interface MainLayoutProps {
 }
 
 export function MainLayout({ children }: MainLayoutProps) {
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, isInitialized } = useAuth();
   const pathname = usePathname();
 
-  // 登录页面不需要布局
-  const isLoginPage = pathname === '/login';
+  // 登录页面不需要布局（兼容有无basePath的情况）
+  // Next.js usePathname 在有basePath时返回不含basePath的路径
+  // 但为了安全，同时检查两种情况
+  const isLoginPage = pathname === '/login' || pathname?.endsWith('/login') || pathname === '/login/';
 
+  // 登录页面直接渲染，不受登录状态影响
   if (isLoginPage) {
     return <>{children}</>;
+  }
+
+  // 等待初始化完成
+  if (!isInitialized) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
   }
 
   // 未登录时显示登录引导
@@ -35,12 +48,12 @@ export function MainLayout({ children }: MainLayoutProps) {
           </div>
           <h1 className="text-2xl font-bold mb-2">粮食安全监管系统</h1>
           <p className="text-white/70 mb-6">请先登录系统</p>
-          <a
+          <Link
             href="/login"
             className="inline-flex items-center gap-2 rounded-lg bg-white px-6 py-3 text-[#1A5C9A] font-medium hover:bg-white/90 transition-colors"
           >
             进入登录页面
-          </a>
+          </Link>
         </div>
       </div>
     );
