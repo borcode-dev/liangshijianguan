@@ -54,6 +54,24 @@ const BB_COUNTY_TOWNS: [string, string][] = [
   ['淮上区','沫河口镇'],['淮上区','吴小街镇'],['淮上区','小蚌埠镇'],['淮上区','梅桥镇'],
 ];
 
+// 合肥市区县乡镇
+const HF_COUNTY_TOWNS: [string, string][] = [
+  ['肥东县','店埠镇'],['肥东县','撮镇'],['肥东县','梁园镇'],['肥东县','桥头集镇'],['肥东县','长临河镇'],
+  ['肥东县','石塘镇'],['肥东县','古城镇'],['肥东县','包公镇'],
+  ['肥西县','上派镇'],['肥西县','三河镇'],['肥西县','桃花镇'],['肥西县','花岗镇'],
+  ['肥西县','紫蓬镇'],['肥西县','严店镇'],['肥西县','山南镇'],['肥西县','丰乐镇'],
+  ['长丰县','水湖镇'],['长丰县','双墩镇'],['长丰县','岗集镇'],['长丰县','下塘镇'],
+  ['长丰县','吴山镇'],['长丰县','杨庙镇'],['长丰县','朱巷镇'],
+  ['庐江县','庐城镇'],['庐江县','汤池镇'],['庐江县','万山镇'],['庐江县','同大镇'],
+  ['庐江县','金牛镇'],['庐江县','石头镇'],['庐江县','龙桥镇'],
+  ['巢湖市','半汤街道'],['巢湖市','柘皋镇'],['巢湖市','烔炀镇'],['巢湖市','银屏镇'],
+  ['巢湖市','黄麓镇'],['巢湖市','散兵镇'],['巢湖市','夏阁镇'],
+  ['蜀山区','井岗镇'],['蜀山区','南岗镇'],['蜀山区','小庙镇'],
+  ['包河区','大圩镇'],['包河区','义城街道'],
+  ['瑶海区','大兴镇'],['瑶海区','磨店乡'],
+  ['庐阳区','三十岗乡'],['庐阳区','大杨镇'],
+];
+
 // 其他城市数据
 const OTHER_CITIES: { city: string; lng: number; lat: number; counties: [string, string][] }[] = [
   { city: '合肥市', lng: 117.27, lat: 31.86, counties: [['肥西县','上派镇'],['肥东县','店埠镇'],['长丰县','水湖镇']] },
@@ -151,6 +169,39 @@ function generateSpots(): Spot[] {
         batchNo: `JM-2026-${pad(Math.ceil(id / 30), 2)}`,
         coordinate: { lng: +(117.20 + id * 0.004).toFixed(4), lat: +(32.80 + id * 0.003).toFixed(4) },
         inspector: hasInspector ? NAMES[(si * 20 + i) % NAMES.length] : undefined,
+        deadline: hasInspector ? daysBefore(daysBack - 7) : undefined,
+      });
+    }
+  }
+
+  // 合肥市：9 个状态 × 10 条 = 90 条
+  for (let si = 0; si < statuses.length; si++) {
+    const status = statuses[si];
+    const [minBack, maxBack] = dateRanges[si];
+    for (let i = 0; i < 10; i++) {
+      id++;
+      const daysBack = spreadDays(i, 10, minBack, maxBack);
+      const ct = HF_COUNTY_TOWNS[(si * 10 + i) % HF_COUNTY_TOWNS.length];
+      const pt = problemTypeForIdx(i + 3);
+      const rl = riskLevelForIdx(i + 2);
+      const area = areaForIdx(500 + si * 10 + i);
+      const discoverDate = daysBefore(daysBack);
+      const hasInspector = status !== '待下发';
+      result.push({
+        id: String(id),
+        spotNo: `TB-2026-${pad(id, 3)}`,
+        problemType: pt,
+        area,
+        riskLevel: rl,
+        location: `合肥市${ct[0]}${ct[1]}`,
+        city: '合肥市',
+        county: ct[0],
+        town: ct[1],
+        status,
+        discoverDate,
+        batchNo: `JM-2026-${pad(Math.ceil(id / 30), 2)}`,
+        coordinate: { lng: +(117.27 + id * 0.003).toFixed(4), lat: +(31.86 + id * 0.002).toFixed(4) },
+        inspector: hasInspector ? NAMES[(si * 10 + i + 5) % NAMES.length] : undefined,
         deadline: hasInspector ? daysBefore(daysBack - 7) : undefined,
       });
     }
@@ -262,6 +313,41 @@ function generateEvents(): Event[] {
     }
   }
 
+  // 合肥市：6 个状态 × 10 条 = 60 条
+  for (let si = 0; si < statuses.length; si++) {
+    const status = statuses[si];
+    const [minBack, maxBack] = dateRanges[si];
+    for (let i = 0; i < 10; i++) {
+      id++;
+      const daysBack = spreadDays(i, 10, minBack, maxBack);
+      const ct = HF_COUNTY_TOWNS[(si * 10 + i) % HF_COUNTY_TOWNS.length];
+      const pt = problemTypeForIdx(i + 2);
+      const area = areaForIdx(600 + si * 10 + i);
+      const reportDate = daysBefore(daysBack);
+      const hour = 8 + (i % 12);
+      const minute = (i * 7) % 60;
+      const photoCount = 1 + (i % 3);
+      const photos = Array.from({ length: photoCount }, (_, pi) => `/uploads/sj${pad(id, 3)}-${pi + 1}.jpg`);
+      result.push({
+        id: String(id),
+        eventNo: `SJ-2026-${pad(id, 3)}`,
+        eventType: pt,
+        location: `合肥市${ct[0]}${ct[1]}${['村东','村西','村南','村北','组东侧','组西侧','南侧','北侧'][i % 8]}地块`,
+        city: '合肥市',
+        county: ct[0],
+        town: ct[1],
+        reportTime: `${reportDate} ${pad(hour, 2)}:${pad(minute, 2)}`,
+        reporter: REPORTER_NAMES[(si * 10 + i + 3) % REPORTER_NAMES.length],
+        reporterPhone: phoneForIdx(si * 10 + i + 30),
+        area,
+        description: `${ct[0]}${ct[1]}${['村东','村西','村南','村北','组东侧','组西侧','南侧','北侧'][i % 8]}地块约${area}亩${pt === '撂荒' ? '耕地长期闲置撂荒，杂草丛生' : pt === '非粮化' ? '耕地被改种非粮作物，违反耕地用途管制' : pt === '疑似割青' ? '小麦田疑似被提前收割作青贮，需核查确认' : pt === '种植计划未落实' ? '未按种植计划落实粮食作物种植' : '田间发现焚烧秸秆行为，产生大量烟尘'}`,
+        status,
+        photos,
+        coordinate: { lng: +(117.29 + id * 0.002).toFixed(4), lat: +(31.88 + id * 0.0015).toFixed(4) },
+      });
+    }
+  }
+
   // 其他城市：约 20 条
   for (let ci = 0; ci < OTHER_CITIES.length; ci++) {
     const cd = OTHER_CITIES[ci];
@@ -343,6 +429,40 @@ function generateInspectionTasks(): InspectionTask[] {
     }
   }
 
+  // 合肥市：3 个状态 × 10 条 = 30 条
+  for (let si = 0; si < statuses.length; si++) {
+    const status = statuses[si];
+    const [minBack, maxBack] = dateRanges[si];
+    for (let i = 0; i < 10; i++) {
+      id++;
+      const daysBack = spreadDays(i, 10, minBack, maxBack);
+      const ct = HF_COUNTY_TOWNS[(si * 10 + i) % HF_COUNTY_TOWNS.length];
+      const pt = problemTypeForIdx(i + 4);
+      const area = areaForIdx(700 + si * 10 + i);
+      const assignTime = daysBefore(daysBack);
+      const deadlineDays = daysBack - 10;
+      const isCompleted = status === '已完成';
+      const isOverdue = isCompleted ? (i % 5 === 0) : (daysBack > 7);
+      result.push({
+        id: String(id),
+        taskNo: `HC-2026-${pad(id, 3)}`,
+        spotNo: i % 2 === 0 ? `TB-2026-${pad(si * 10 + i + 181, 3)}` : undefined,
+        eventNo: i % 2 === 1 ? `SJ-2026-${pad(si * 10 + i + 121, 3)}` : undefined,
+        type: pt,
+        location: `合肥市${ct[0]}${ct[1]}`,
+        city: '合肥市',
+        area,
+        assignTime,
+        deadline: daysBefore(deadlineDays),
+        status,
+        inspector: NAMES[(si * 10 + i + 8) % NAMES.length],
+        result: isCompleted ? (i % 4 === 0 ? '问题不属实' : '问题属实') : undefined,
+        overdue: isOverdue ? true : undefined,
+        overdueDays: isOverdue ? (1 + (i % 5)) : undefined,
+      });
+    }
+  }
+
   // 其他城市：约 20 条
   for (let ci = 0; ci < OTHER_CITIES.length; ci++) {
     const cd = OTHER_CITIES[ci];
@@ -416,6 +536,32 @@ function generateRectificationTasks(): RectificationTask[] {
         status,
         progress,
         measures,
+      });
+    }
+  }
+
+  // 合肥市：4 个状态 × 10 条 = 40 条
+  for (let si = 0; si < statuses.length; si++) {
+    const status = statuses[si];
+    const [minBack, maxBack] = dateRanges[si];
+    for (let i = 0; i < 10; i++) {
+      id++;
+      const daysBack = spreadDays(i, 10, minBack, maxBack);
+      const ct = HF_COUNTY_TOWNS[(si * 10 + i) % HF_COUNTY_TOWNS.length];
+      const pt = problemTypeForIdx(i + 1);
+      const progressMap: Record<string, number> = { '待整改': 0, '整改中': 15 + (i * 8) % 60, '待验收': 90 + (i % 10), '已完成': 100 };
+      result.push({
+        id: String(id),
+        eventNo: `SJ-2026-${pad(si * 10 + i + 121, 3)}`,
+        eventType: pt,
+        location: `合肥市${ct[0]}${ct[1]}`,
+        city: '合肥市',
+        responsiblePerson: RESPONSIBLE_PERSONS[(si * 10 + i + 3) % RESPONSIBLE_PERSONS.length],
+        responsibleUnit: RESPONSIBLE_UNITS[(si * 10 + i) % RESPONSIBLE_UNITS.length],
+        deadline: daysBefore(daysBack - 14),
+        status,
+        progress: progressMap[status],
+        measures: [MEASURES_POOL[(si * 10 + i) % MEASURES_POOL.length], MEASURES_POOL[(si * 10 + i + 3) % MEASURES_POOL.length]],
       });
     }
   }
@@ -503,6 +649,31 @@ function generateCaseReviews() {
     }
   }
 
+  // 合肥市：3 个状态 × 10 条 = 30 条
+  for (let si = 0; si < statuses.length; si++) {
+    const status = statuses[si];
+    const [minBack, maxBack] = dateRanges[si];
+    for (let i = 0; i < 10; i++) {
+      id++;
+      const daysBack = spreadDays(i, 10, minBack, maxBack);
+      const ct = HF_COUNTY_TOWNS[(si * 10 + i) % HF_COUNTY_TOWNS.length];
+      const pt = problemTypeForIdx(i + 5);
+      const effectIdx = (si * 10 + i) % EFFECTS.length;
+      result.push({
+        id: String(id),
+        eventNo: `SJ-2026-${pad(si * 10 + i + 121, 3)}`,
+        type: pt,
+        location: `合肥市${ct[0]}${ct[1]}`,
+        city: '合肥市',
+        completeDate: daysBefore(daysBack),
+        effect: EFFECTS[effectIdx],
+        status,
+        rejectReason: status === '已退回' ? REJECT_REASONS[i % REJECT_REASONS.length] : undefined,
+        reviewOpinion: status === '已通过' ? REVIEW_OPINIONS[i % REVIEW_OPINIONS.length] : undefined,
+      });
+    }
+  }
+
   // 其他城市：约 15 条
   for (let ci = 0; ci < OTHER_CITIES.length; ci++) {
     const cd = OTHER_CITIES[ci];
@@ -553,6 +724,27 @@ function generateInspectionRecords(): InspectionRecord[] {
       city: '蚌埠市',
       result: hasProblem ? '发现问题' : '未发现问题',
       problemDescription: hasProblem ? `${ct[0]}${ct[1]}${['发现耕地撂荒','发现非粮化种植','发现疑似割青行为','发现种植计划未落实','发现焚烧秸秆行为'][i % 5]}` : undefined,
+      photos: hasProblem ? [`/uploads/xc${pad(id, 3)}-1.jpg`] : [],
+    });
+  }
+
+  // 合肥市：10 条
+  for (let i = 0; i < 10; i++) {
+    id++;
+    const daysBack = i * 2 + 1;
+    const ct = HF_COUNTY_TOWNS[i % HF_COUNTY_TOWNS.length];
+    const hasProblem = i % 3 !== 2;
+    result.push({
+      id: String(id),
+      recordNo: `XC-2026-${pad(id, 3)}`,
+      date: daysBefore(daysBack),
+      inspector: NAMES[(i + 6) % NAMES.length],
+      unit: `${ct[0]}农业农村局`,
+      type: i % 2 === 0 ? '随机抽查' : '定点抽查',
+      location: `合肥市${ct[0]}${ct[1]}`,
+      city: '合肥市',
+      result: hasProblem ? '发现问题' : '未发现问题',
+      problemDescription: hasProblem ? `${ct[0]}${ct[1]}发现${problemTypeForIdx(i)}问题，面积约${areaForIdx(800 + i)}亩` : undefined,
       photos: hasProblem ? [`/uploads/xc${pad(id, 3)}-1.jpg`] : [],
     });
   }
@@ -617,6 +809,22 @@ function generatePatrols() {
     });
   }
 
+  // 合肥市：10 条
+  for (let i = 0; i < 10; i++) {
+    id++;
+    const daysBack = i * 2 + 1;
+    const ct = HF_COUNTY_TOWNS[i % HF_COUNTY_TOWNS.length];
+    result.push({
+      id: String(id),
+      patrolNo: `XC-2026-${pad(id + 50, 3)}`,
+      date: daysBefore(daysBack),
+      location: `合肥市${ct[0]}${ct[1]}`,
+      city: '合肥市',
+      type: PATROL_TYPES[i % PATROL_TYPES.length],
+      hasProblem: i % 3 !== 2,
+    });
+  }
+
   // 其他城市：约 15 条
   for (let ci = 0; ci < OTHER_CITIES.length; ci++) {
     const cd = OTHER_CITIES[ci];
@@ -650,18 +858,18 @@ function generateAlerts(): Alert[] {
     ['danger','阜阳市临泉县疑似违规割青事件待确认，涉及面积5.67亩',1,'阜阳市','立即处理'],
     ['danger','宿州市砀山县非粮化问题持续恶化，整改逾期未完成',1,'宿州市','立即处理'],
     ['danger','六安市霍邱县撂荒面积持续扩大，本月新增4处',2,'六安市','立即处理'],
-    ['danger','亳州市涡阳县秸秆焚烧火点被卫星监测到，需紧急核查',2,'亳州市','立即处理'],
+    ['danger','合肥市肥东县秸秆焚烧火点被卫星监测到，需紧急核查',2,'合肥市','立即处理'],
     ['warning','蚌埠市待核查图斑超过50个，请加快核查进度',0,'蚌埠市','查看详情'],
     ['warning','蚌埠市五河县2个整改任务即将到期，请及时跟进',1,'蚌埠市','查看详情'],
-    ['warning','阜阳市颍上县2个整改任务即将到期，请及时跟进',2,'阜阳市','查看详情'],
+    ['warning','合肥市肥西县2个整改任务即将到期，请及时跟进',2,'合肥市','查看详情'],
     ['warning','合肥市肥东县撂荒图斑核查完成率低于全省平均水平',3,'合肥市','查看详情'],
     ['warning','滁州市定远县3个核查任务即将超期，剩余2天',3,'滁州市','查看详情'],
-    ['warning','安庆市怀宁县非粮化整改进度缓慢，当前仅完成35%',4,'安庆市','查看详情'],
+    ['warning','合肥市长丰县非粮化整改进度缓慢，当前仅完成35%',4,'合肥市','查看详情'],
     ['warning','宿州市萧县本月新增图斑数量较多，需加强巡查力度',5,'宿州市','查看详情'],
-    ['warning','淮南市凤台县撂荒复耕率未达标，需加大推进力度',5,'淮南市','查看详情'],
+    ['warning','合肥市庐江县撂荒复耕率未达标，需加大推进力度',5,'合肥市','查看详情'],
     ['info','芜湖市鸠江区本月图斑处置率达到95%，表现优秀',0,'芜湖市','查看详情'],
     ['info','马鞍山市当涂县种植计划落实情况良好，已全部完成',1,'马鞍山市','查看详情'],
-    ['info','蚌埠市禹会区整改完成率位居全市前列',2,'蚌埠市','查看详情'],
+    ['info','合肥市巢湖市整改完成率位居全市前列',2,'合肥市','查看详情'],
     ['info','黄山市歙县本月无新增图斑，粮食安全态势良好',3,'黄山市','查看详情'],
     ['info','铜陵市枞阳县整改完成率位居全省前列',4,'铜陵市','查看详情'],
     ['info','池州市东至县完成秋季种植计划核查，结果正常',5,'池州市','查看详情'],

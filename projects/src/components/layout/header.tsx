@@ -17,7 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth, PRESET_ACCOUNTS } from '@/lib/auth';
 
 export function Header() {
-  const { user, locationText, switchAccount, logout } = useAuth();
+  const { user, switchAccount, logout } = useAuth();
 
   const handleSwitchAccount = (account: typeof PRESET_ACCOUNTS[0]) => {
     switchAccount({
@@ -41,27 +41,13 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 flex h-[60px] items-center justify-between border-b bg-primary px-6 text-primary-foreground">
       {/* 左侧：Logo 和标题 */}
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10">
-            <svg
-              viewBox="0 0 24 24"
-              className="h-5 w-5 fill-current"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path d="M12 2L2 7v10l10 5 10-5V7L12 2zm0 2.18l7.5 3.75L12 11.68 4.5 7.93 12 4.18zM4 9.08l7 3.5v7.42l-7-3.5V9.08zm16 0v7.42l-7 3.5v-7.42l7-3.5z" />
-            </svg>
-          </div>
-          <span className="text-lg font-semibold">粮食安全监管系统</span>
-        </div>
-        <div className="h-5 w-px bg-white/20" />
-        <span className="text-sm text-white/80">{locationText}</span>
-        {user && (
-          <Badge className={`${roleColor} text-white text-xs border-0`}>
-            {user.role === 'province' ? <Shield className="h-3 w-3 mr-1" /> : <Building2 className="h-3 w-3 mr-1" />}
-            {roleLabel}
-          </Badge>
-        )}
+      <div className="flex items-center gap-2">
+        <img
+            src="/liangshijianguan/logo.png"
+            alt="粮食安全监管系统"
+            className="h-8 w-8 rounded-lg"
+          />
+        <span className="text-lg font-semibold">粮食安全监管系统</span>
       </div>
 
       {/* 右侧：消息、帮助、用户 */}
