@@ -8,10 +8,688 @@ import type {
   Statistics,
   CityStatistics,
   GrowthData,
-  Alert
+  Alert,
+  ProblemType,
+  RiskLevel,
+  SpotStatus,
+  EventStatus,
+  ImageSource,
 } from '@/types';
 
-// ==================== 首页统计数据 ====================
+// ============================================================
+// 值池
+// ============================================================
+const NAMES = ['王建国','李志强','张伟','刘洋','陈明','杨磊','赵军','黄勇','周涛','吴斌','徐鹏','孙超','马飞','朱亮','胡杰','郭威','何坤','林峰','罗辉','梁宇'];
+const REPORTER_NAMES = ['张秀英','王大明','李红梅','陈志华','刘德才','赵福运','周桂兰','吴学文','徐美玲','孙长青','杨秀芳','马建国','黄丽华','朱文斌','胡庆丰'];
+const PHONE_PREFIXES = ['138','139','136','137','155','158','159','182','183','187'];
+const RESPONSIBLE_PERSONS = ['张守义','李根宝','王德福','陈有才','刘正发','赵广明','周传家','吴本善','徐立业','孙守正'];
+const RESPONSIBLE_UNITS = ['地块经营权人','村委会','乡镇政府','县农业农村局','县自然资源局'];
+const MEASURES_POOL = ['复耕复种','调整种植结构','清理违规占用','恢复粮食种植','落实种植计划','加强巡查监管','限期整改到位','追缴相关补贴','约谈责任人','移交执法部门'];
+const EFFECTS = ['已恢复粮食种植','已完成复耕复种','违规占用已清理','种植计划已落实','整改效果良好','基本恢复种植条件','已调整种植结构'];
+const REVIEW_OPINIONS = ['同意通过','整改到位，予以结案','复核无误，同意结案','整改措施落实到位','问题已妥善解决'];
+const REJECT_REASONS = ['整改措施不到位','复耕面积不达标','未提供有效证明材料','整改效果不明显','需进一步核实'];
+const PATROL_TYPES = ['日常巡查','专项检查','随机抽查','重点督查','联合巡查'];
+const EVENT_DESCRIPTIONS = [
+  '发现大面积耕地撂荒，杂草丛生，长期未耕种',
+  '耕地出现非粮化种植，改种经济作物',
+  '疑似割青毁麦行为，需进一步核查确认',
+  '种植计划未按要求落实，未种植指定粮食作物',
+  '田间发现焚烧秸秆行为，产生大量烟尘',
+  '耕地被违规占用建设，需恢复种植条件',
+  '基本农田出现撂荒现象，面积较大',
+  '耕地改种苗木花卉，偏离粮食种植方向',
+];
+
+// 蚌埠市区县乡镇
+const BB_COUNTY_TOWNS: [string, string][] = [
+  ['怀远县','龙亢镇'],['怀远县','鲍集镇'],['怀远县','双桥集镇'],['怀远县','万福镇'],
+  ['怀远县','淝河镇'],['怀远县','唐集镇'],['怀远县','朱疃镇'],['怀远县','兰桥乡'],
+  ['五河县','城关镇'],['五河县','新集镇'],['五河县','沱湖镇'],['五河县','小溪镇'],
+  ['五河县','头铺镇'],['五河县','大新镇'],['五河县','朱顶镇'],['五河县','双忠庙镇'],
+  ['固镇县','城关镇'],['固镇县','连城镇'],['固镇县','湖沟镇'],['固镇县','任桥镇'],
+  ['固镇县','杨庙乡'],['固镇县','石湖乡'],['固镇县','仲兴乡'],['固镇县','刘集镇'],
+  ['龙子湖区','李楼乡'],['龙子湖区','曹山街道'],['龙子湖区','解放街道'],
+  ['禹会区','马城镇'],['禹会区','长青乡'],['禹会区','大庆街道'],
+  ['蚌山区','燕山乡'],['蚌山区','雪华乡'],['蚌山区','黄庄街道'],
+  ['淮上区','沫河口镇'],['淮上区','吴小街镇'],['淮上区','小蚌埠镇'],['淮上区','梅桥镇'],
+];
+
+// 其他城市数据
+const OTHER_CITIES: { city: string; lng: number; lat: number; counties: [string, string][] }[] = [
+  { city: '合肥市', lng: 117.27, lat: 31.86, counties: [['肥西县','上派镇'],['肥东县','店埠镇'],['长丰县','水湖镇']] },
+  { city: '芜湖市', lng: 118.38, lat: 31.33, counties: [['繁昌区','繁阳镇'],['南陵县','籍山镇']] },
+  { city: '淮南市', lng: 116.98, lat: 32.63, counties: [['凤台县','城关镇'],['寿县','寿春镇']] },
+  { city: '马鞍山市', lng: 118.51, lat: 31.67, counties: [['当涂县','姑孰镇'],['含山县','环峰镇']] },
+  { city: '淮北市', lng: 116.79, lat: 33.97, counties: [['濉溪县','濉溪镇']] },
+  { city: '铜陵市', lng: 117.21, lat: 30.76, counties: [['枞阳县','枞阳镇']] },
+  { city: '安庆市', lng: 117.05, lat: 30.53, counties: [['怀宁县','高河镇'],['太湖县','晋熙镇']] },
+  { city: '黄山市', lng: 118.34, lat: 29.71, counties: [['歙县','徽城镇'],['休宁县','海阳镇']] },
+  { city: '滁州市', lng: 118.32, lat: 32.30, counties: [['天长市','天长街道'],['定远县','定城镇']] },
+  { city: '阜阳市', lng: 115.81, lat: 32.89, counties: [['临泉县','城关镇'],['太和县','城关镇']] },
+  { city: '宿州市', lng: 116.96, lat: 33.65, counties: [['砀山县','砀城镇'],['萧县','龙城镇']] },
+  { city: '六安市', lng: 116.52, lat: 31.74, counties: [['霍邱县','城关镇'],['舒城县','城关镇']] },
+  { city: '亳州市', lng: 115.78, lat: 33.85, counties: [['涡阳县','城关街道'],['蒙城县','城关街道']] },
+  { city: '池州市', lng: 117.49, lat: 30.66, counties: [['东至县','尧渡镇']] },
+  { city: '宣城市', lng: 118.76, lat: 30.95, counties: [['郎溪县','建平镇']] },
+];
+
+const ALL_CITIES = ['合肥市','芜湖市','蚌埠市','淮南市','马鞍山市','淮北市','铜陵市','安庆市','黄山市','滁州市','阜阳市','宿州市','六安市','亳州市','池州市','宣城市'];
+
+// ============================================================
+// 辅助函数
+// ============================================================
+function pad(n: number, w: number): string { return String(n).padStart(w, '0'); }
+
+function daysBefore(daysBack: number): string {
+  const d = new Date(2026, 5, 20 - daysBack);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1, 2)}-${pad(d.getDate(), 2)}`;
+}
+
+function problemTypeForIdx(i: number): ProblemType {
+  const r = i % 20;
+  if (r < 7) return '撂荒';
+  if (r < 12) return '非粮化';
+  if (r < 15) return '疑似割青';
+  if (r < 18) return '种植计划未落实';
+  return '焚烧秸秆';
+}
+
+function riskLevelForIdx(i: number): RiskLevel {
+  const r = i % 20;
+  if (r < 6) return 'high';
+  if (r < 14) return 'medium';
+  return 'low';
+}
+
+function areaForIdx(i: number): number {
+  return +(1.23 + ((i * 7.31 + 3.47) % 27.33)).toFixed(2);
+}
+
+function phoneForIdx(i: number): string {
+  return PHONE_PREFIXES[i % PHONE_PREFIXES.length] + String(10000000 + ((i * 13579 + 24680) % 89999999)).slice(0, 8);
+}
+
+function spreadDays(i: number, count: number, minBack: number, maxBack: number): number {
+  return minBack + Math.round(i * (maxBack - minBack) / (count - 1));
+}
+
+// ============================================================
+// 生成图斑 spots
+// ============================================================
+function generateSpots(): Spot[] {
+  const result: Spot[] = [];
+  let id = 0;
+
+  const statuses: SpotStatus[] = ['待下发','待核查','核查中','待上报','待审核','整改中','待验收','已结案','需复查'];
+  const dateRanges: [number, number][] = [[0,2],[1,5],[2,8],[4,10],[5,12],[6,19],[10,26],[15,41],[19,46]];
+
+  // 蚌埠市：9 个状态 × 20 条 = 180 条
+  for (let si = 0; si < statuses.length; si++) {
+    const status = statuses[si];
+    const [minBack, maxBack] = dateRanges[si];
+    for (let i = 0; i < 20; i++) {
+      id++;
+      const daysBack = spreadDays(i, 20, minBack, maxBack);
+      const ct = BB_COUNTY_TOWNS[(si * 20 + i) % BB_COUNTY_TOWNS.length];
+      const pt = problemTypeForIdx(i);
+      const rl = riskLevelForIdx(i);
+      const area = areaForIdx(si * 20 + i);
+      const discoverDate = daysBefore(daysBack);
+      const hasInspector = status !== '待下发';
+      result.push({
+        id: String(id),
+        spotNo: `TB-2026-${pad(id, 3)}`,
+        problemType: pt,
+        area,
+        riskLevel: rl,
+        location: `蚌埠市${ct[0]}${ct[1]}`,
+        city: '蚌埠市',
+        county: ct[0],
+        town: ct[1],
+        status,
+        discoverDate,
+        batchNo: `JM-2026-${pad(Math.ceil(id / 30), 2)}`,
+        coordinate: { lng: +(117.20 + id * 0.004).toFixed(4), lat: +(32.80 + id * 0.003).toFixed(4) },
+        inspector: hasInspector ? NAMES[(si * 20 + i) % NAMES.length] : undefined,
+        deadline: hasInspector ? daysBefore(daysBack - 7) : undefined,
+      });
+    }
+  }
+
+  // 其他城市：约 40 条
+  for (let ci = 0; ci < OTHER_CITIES.length; ci++) {
+    const cd = OTHER_CITIES[ci];
+    const count = ci < 5 ? 3 : 2;
+    for (let i = 0; i < count; i++) {
+      id++;
+      const ct = cd.counties[i % cd.counties.length];
+      const status = statuses[(ci * 3 + i) % statuses.length];
+      const daysBack = 5 + ci * 2 + i;
+      const hasInspector = status !== '待下发';
+      result.push({
+        id: String(id),
+        spotNo: `TB-2026-${pad(id, 3)}`,
+        problemType: problemTypeForIdx(ci * 3 + i + 5),
+        area: areaForIdx(100 + ci * 3 + i),
+        riskLevel: riskLevelForIdx(ci * 3 + i + 3),
+        location: `${cd.city}${ct[0]}${ct[1]}`,
+        city: cd.city,
+        county: ct[0],
+        town: ct[1],
+        status,
+        discoverDate: daysBefore(daysBack),
+        batchNo: `JM-2026-${pad(Math.ceil(id / 30), 2)}`,
+        coordinate: { lng: +(cd.lng + i * 0.02).toFixed(4), lat: +(cd.lat + i * 0.015).toFixed(4) },
+        inspector: hasInspector ? NAMES[(ci + i) % NAMES.length] : undefined,
+        deadline: hasInspector ? daysBefore(daysBack - 7) : undefined,
+      });
+    }
+  }
+
+  return result;
+}
+
+export const spots: Spot[] = generateSpots();
+
+// ============================================================
+// 生成监测批次 monitorBatches
+// ============================================================
+function generateMonitorBatches(): MonitorBatch[] {
+  const sources: ImageSource[] = ['卫星遥感','无人机','地面采集'];
+  const regions = ['全省','蚌埠市','阜阳市','全省','宿州市','六安市','合肥市肥东县','全省','亳州市','滁州市','安庆市','淮南市凤台县','全省','淮北市','芜湖市','宣城市','全省','马鞍山市','池州市','全省'];
+  const result: MonitorBatch[] = [];
+  for (let i = 0; i < 20; i++) {
+    const daysBack = i * 5 + (i % 3);
+    result.push({
+      id: String(i + 1),
+      batchNo: `JM-2026-${pad(20 - i, 2)}`,
+      monitorDate: daysBefore(daysBack),
+      imageSource: sources[i % 3],
+      region: regions[i],
+      spotCount: 350 + ((i * 37 + 13) % 150),
+      suspectedCount: 50 + ((i * 23 + 7) % 60),
+      resolution: sources[i % 3] === '地面采集' ? '0.1米' : sources[i % 3] === '无人机' ? '0.5米' : '2米',
+      coverage: regions[i] === '全省' ? '14万平方公里' : `${1000 + ((i * 543) % 14000)}平方公里`,
+    });
+  }
+  return result;
+}
+
+export const monitorBatches: MonitorBatch[] = generateMonitorBatches();
+
+// ============================================================
+// 生成事件 events
+// ============================================================
+function generateEvents(): Event[] {
+  const result: Event[] = [];
+  let id = 0;
+
+  const statuses: EventStatus[] = ['待受理','待核查','核查中','待审核','已结案','已驳回'];
+  const dateRanges: [number, number][] = [[0,2],[1,5],[2,8],[5,12],[15,41],[10,36]];
+
+  // 蚌埠市：6 个状态 × 20 条 = 120 条
+  for (let si = 0; si < statuses.length; si++) {
+    const status = statuses[si];
+    const [minBack, maxBack] = dateRanges[si];
+    for (let i = 0; i < 20; i++) {
+      id++;
+      const daysBack = spreadDays(i, 20, minBack, maxBack);
+      const ct = BB_COUNTY_TOWNS[(si * 20 + i) % BB_COUNTY_TOWNS.length];
+      const pt = problemTypeForIdx(i);
+      const area = areaForIdx(si * 20 + i + 10);
+      const reportDate = daysBefore(daysBack);
+      const hour = 8 + (i % 12);
+      const minute = (i * 7) % 60;
+      const photoCount = 1 + (i % 3);
+      const photos = Array.from({ length: photoCount }, (_, pi) => `/uploads/sj${pad(id, 3)}-${pi + 1}.jpg`);
+      result.push({
+        id: String(id),
+        eventNo: `SJ-2026-${pad(id, 3)}`,
+        eventType: pt,
+        location: `蚌埠市${ct[0]}${ct[1]}${['村东','村西','村南','村北','组东侧','组西侧','南侧','北侧'][i % 8]}地块`,
+        city: '蚌埠市',
+        county: ct[0],
+        town: ct[1],
+        reportTime: `${reportDate} ${pad(hour, 2)}:${pad(minute, 2)}`,
+        reporter: REPORTER_NAMES[(si * 20 + i) % REPORTER_NAMES.length],
+        reporterPhone: phoneForIdx(si * 20 + i),
+        area,
+        description: `${ct[0]}${ct[1]}${['村东','村西','村南','村北','组东侧','组西侧','南侧','北侧'][i % 8]}地块约${area}亩${pt === '撂荒' ? '耕地长期闲置撂荒，杂草丛生' : pt === '非粮化' ? '耕地被改种非粮作物，违反耕地用途管制' : pt === '疑似割青' ? '小麦田疑似被提前收割作青贮，需核查确认' : pt === '种植计划未落实' ? '未按种植计划落实粮食作物种植' : '田间发现焚烧秸秆行为，产生大量烟尘'}`,
+        status,
+        photos,
+        coordinate: { lng: +(117.22 + id * 0.003).toFixed(4), lat: +(32.82 + id * 0.002).toFixed(4) },
+      });
+    }
+  }
+
+  // 其他城市：约 20 条
+  for (let ci = 0; ci < OTHER_CITIES.length; ci++) {
+    const cd = OTHER_CITIES[ci];
+    const count = ci < 5 ? 2 : 1;
+    for (let i = 0; i < count; i++) {
+      id++;
+      const ct = cd.counties[i % cd.counties.length];
+      const status = statuses[(ci + i) % statuses.length];
+      const daysBack = 8 + ci * 3 + i;
+      const pt = problemTypeForIdx(ci + i + 3);
+      const area = areaForIdx(200 + ci * 2 + i);
+      const reportDate = daysBefore(daysBack);
+      result.push({
+        id: String(id),
+        eventNo: `SJ-2026-${pad(id, 3)}`,
+        eventType: pt,
+        location: `${cd.city}${ct[0]}${ct[1]}地块`,
+        city: cd.city,
+        county: ct[0],
+        town: ct[1],
+        reportTime: `${reportDate} ${pad(9 + (ci % 10), 2)}:${pad((ci * 11) % 60, 2)}`,
+        reporter: REPORTER_NAMES[(ci + i) % REPORTER_NAMES.length],
+        reporterPhone: phoneForIdx(ci * 2 + i + 50),
+        area,
+        description: EVENT_DESCRIPTIONS[(ci + i) % EVENT_DESCRIPTIONS.length],
+        status,
+        photos: [`/uploads/sj${pad(id, 3)}-1.jpg`],
+        coordinate: { lng: +(cd.lng + i * 0.015).toFixed(4), lat: +(cd.lat + i * 0.01).toFixed(4) },
+      });
+    }
+  }
+
+  return result;
+}
+
+export const events: Event[] = generateEvents();
+
+// ============================================================
+// 生成核查任务 inspectionTasks
+// ============================================================
+function generateInspectionTasks(): InspectionTask[] {
+  const result: InspectionTask[] = [];
+  let id = 0;
+
+  const statuses: ('待核查' | '核查中' | '已完成')[] = ['待核查','核查中','已完成'];
+  const dateRanges: [number, number][] = [[0,5],[2,10],[5,19]];
+
+  // 蚌埠市：3 个状态 × 20 条 = 60 条
+  for (let si = 0; si < statuses.length; si++) {
+    const status = statuses[si];
+    const [minBack, maxBack] = dateRanges[si];
+    for (let i = 0; i < 20; i++) {
+      id++;
+      const daysBack = spreadDays(i, 20, minBack, maxBack);
+      const ct = BB_COUNTY_TOWNS[(si * 20 + i) % BB_COUNTY_TOWNS.length];
+      const pt = problemTypeForIdx(i);
+      const area = areaForIdx(si * 20 + i + 30);
+      const assignTime = daysBefore(daysBack);
+      const deadlineDays = daysBack - 10;
+      const isCompleted = status === '已完成';
+      const isOverdue = isCompleted ? (i % 5 === 0) : (daysBack > 7);
+      result.push({
+        id: String(id),
+        taskNo: `HC-2026-${pad(id, 3)}`,
+        spotNo: i % 2 === 0 ? `TB-2026-${pad(si * 20 + i + 1, 3)}` : undefined,
+        eventNo: i % 2 === 1 ? `SJ-2026-${pad(si * 20 + i + 1, 3)}` : undefined,
+        type: pt,
+        location: `蚌埠市${ct[0]}${ct[1]}`,
+        city: '蚌埠市',
+        area,
+        assignTime,
+        deadline: daysBefore(deadlineDays),
+        status,
+        inspector: NAMES[(si * 20 + i) % NAMES.length],
+        result: isCompleted ? (i % 4 === 0 ? '问题不属实' : '问题属实') : undefined,
+        overdue: isOverdue ? true : undefined,
+        overdueDays: isOverdue ? (1 + (i % 7)) : undefined,
+      });
+    }
+  }
+
+  // 其他城市：约 20 条
+  for (let ci = 0; ci < OTHER_CITIES.length; ci++) {
+    const cd = OTHER_CITIES[ci];
+    const count = ci < 5 ? 2 : 1;
+    for (let i = 0; i < count; i++) {
+      id++;
+      const ct = cd.counties[i % cd.counties.length];
+      const status = statuses[(ci + i) % statuses.length];
+      const daysBack = 6 + ci * 2 + i;
+      const pt = problemTypeForIdx(ci + i + 7);
+      const isCompleted = status === '已完成';
+      result.push({
+        id: String(id),
+        taskNo: `HC-2026-${pad(id, 3)}`,
+        spotNo: i % 2 === 0 ? `TB-2026-${pad(180 + ci * 3 + i + 1, 3)}` : undefined,
+        eventNo: i % 2 === 1 ? `SJ-2026-${pad(120 + ci * 2 + i + 1, 3)}` : undefined,
+        type: pt,
+        location: `${cd.city}${ct[0]}${ct[1]}`,
+        city: cd.city,
+        area: areaForIdx(300 + ci * 2 + i),
+        assignTime: daysBefore(daysBack),
+        deadline: daysBefore(daysBack - 10),
+        status,
+        inspector: NAMES[(ci + i) % NAMES.length],
+        result: isCompleted ? (i % 3 === 0 ? '问题不属实' : '问题属实') : undefined,
+        overdue: isCompleted && i % 4 === 0 ? true : undefined,
+        overdueDays: isCompleted && i % 4 === 0 ? 2 + (ci % 5) : undefined,
+      });
+    }
+  }
+
+  return result;
+}
+
+export const inspectionTasks: InspectionTask[] = generateInspectionTasks();
+
+// ============================================================
+// 生成整改任务 rectificationTasks
+// ============================================================
+function generateRectificationTasks(): RectificationTask[] {
+  const result: RectificationTask[] = [];
+  let id = 0;
+
+  const statuses: ('待整改' | '整改中' | '待验收' | '已完成')[] = ['待整改','整改中','待验收','已完成'];
+  const dateRanges: [number, number][] = [[0,10],[5,19],[10,31],[15,41]];
+  const progressMap: Record<string, number> = { '待整改': 0, '整改中': -1, '待验收': 100, '已完成': 100 };
+
+  // 蚌埠市：4 个状态 × 20 条 = 80 条
+  for (let si = 0; si < statuses.length; si++) {
+    const status = statuses[si];
+    const [minBack, maxBack] = dateRanges[si];
+    for (let i = 0; i < 20; i++) {
+      id++;
+      const daysBack = spreadDays(i, 20, minBack, maxBack);
+      const ct = BB_COUNTY_TOWNS[(si * 20 + i) % BB_COUNTY_TOWNS.length];
+      const pt = problemTypeForIdx(i);
+      const eventIdx = si * 20 + i + 1;
+      const progress = status === '整改中' ? 15 + ((i * 17) % 76) : progressMap[status];
+      const mStart = (si * 20 + i) % MEASURES_POOL.length;
+      const mCount = 2 + (i % 3);
+      const measures = Array.from({ length: mCount }, (_, mi) => MEASURES_POOL[(mStart + mi) % MEASURES_POOL.length]);
+      result.push({
+        id: String(id),
+        eventNo: `SJ-2026-${pad(eventIdx, 3)}`,
+        eventType: pt,
+        location: `蚌埠市${ct[0]}${ct[1]}`,
+        city: '蚌埠市',
+        responsiblePerson: RESPONSIBLE_PERSONS[(si * 20 + i) % RESPONSIBLE_PERSONS.length],
+        responsibleUnit: RESPONSIBLE_UNITS[(si * 20 + i) % RESPONSIBLE_UNITS.length],
+        deadline: daysBefore(daysBack - 14),
+        status,
+        progress,
+        measures,
+      });
+    }
+  }
+
+  // 其他城市：约 20 条
+  for (let ci = 0; ci < OTHER_CITIES.length; ci++) {
+    const cd = OTHER_CITIES[ci];
+    const count = ci < 5 ? 2 : 1;
+    for (let i = 0; i < count; i++) {
+      id++;
+      const ct = cd.counties[i % cd.counties.length];
+      const status = statuses[(ci + i) % statuses.length];
+      const daysBack = 8 + ci * 3 + i;
+      const pt = problemTypeForIdx(ci + i + 9);
+      const progress = status === '整改中' ? 20 + ((ci * 13) % 60) : status === '待整改' ? 0 : 100;
+      const mStart = (ci + i) % MEASURES_POOL.length;
+      const measures = [MEASURES_POOL[mStart], MEASURES_POOL[(mStart + 1) % MEASURES_POOL.length]];
+      result.push({
+        id: String(id),
+        eventNo: `SJ-2026-${pad(120 + ci * 2 + i + 1, 3)}`,
+        eventType: pt,
+        location: `${cd.city}${ct[0]}${ct[1]}`,
+        city: cd.city,
+        responsiblePerson: RESPONSIBLE_PERSONS[(ci + i) % RESPONSIBLE_PERSONS.length],
+        responsibleUnit: RESPONSIBLE_UNITS[(ci + i) % RESPONSIBLE_UNITS.length],
+        deadline: daysBefore(daysBack - 14),
+        status,
+        progress,
+        measures,
+      });
+    }
+  }
+
+  return result;
+}
+
+export const rectificationTasks: RectificationTask[] = generateRectificationTasks();
+
+// ============================================================
+// 生成结案审核 caseReviews
+// ============================================================
+function generateCaseReviews() {
+  type CaseReviewStatus = '待审核' | '已通过' | '已退回';
+  interface CaseReview {
+    id: string;
+    eventNo: string;
+    type: ProblemType;
+    location: string;
+    city: string;
+    completeDate: string;
+    effect: string;
+    status: CaseReviewStatus;
+    rejectReason?: string;
+    reviewOpinion?: string;
+  }
+
+  const result: CaseReview[] = [];
+  let id = 0;
+
+  const statuses: CaseReviewStatus[] = ['待审核','已通过','已退回'];
+  const dateRanges: [number, number][] = [[0,10],[10,36],[15,41]];
+
+  // 蚌埠市：3 个状态 × 20 条 = 60 条
+  for (let si = 0; si < statuses.length; si++) {
+    const status = statuses[si];
+    const [minBack, maxBack] = dateRanges[si];
+    for (let i = 0; i < 20; i++) {
+      id++;
+      const daysBack = spreadDays(i, 20, minBack, maxBack);
+      const ct = BB_COUNTY_TOWNS[(si * 20 + i) % BB_COUNTY_TOWNS.length];
+      const pt = problemTypeForIdx(i);
+      const eventIdx = (si === 0 ? 60 : si === 1 ? 40 : 80) + i + 1;
+      result.push({
+        id: String(id),
+        eventNo: `SJ-2026-${pad(eventIdx, 3)}`,
+        type: pt,
+        location: `蚌埠市${ct[0]}${ct[1]}`,
+        city: '蚌埠市',
+        completeDate: daysBefore(daysBack),
+        effect: status === '已退回' ? '较差' : i % 3 === 0 ? '一般' : '良好',
+        status,
+        rejectReason: status === '已退回' ? REJECT_REASONS[i % REJECT_REASONS.length] : undefined,
+        reviewOpinion: status === '已通过' ? REVIEW_OPINIONS[i % REVIEW_OPINIONS.length] : status === '待审核' ? REVIEW_OPINIONS[i % REVIEW_OPINIONS.length] : undefined,
+      });
+    }
+  }
+
+  // 其他城市：约 15 条
+  for (let ci = 0; ci < OTHER_CITIES.length; ci++) {
+    const cd = OTHER_CITIES[ci];
+    const ct = cd.counties[0];
+    id++;
+    const status = statuses[ci % statuses.length];
+    const daysBack = 10 + ci * 2;
+    result.push({
+      id: String(id),
+      eventNo: `SJ-2026-${pad(120 + ci + 1, 3)}`,
+      type: problemTypeForIdx(ci + 2),
+      location: `${cd.city}${ct[0]}${ct[1]}`,
+      city: cd.city,
+      completeDate: daysBefore(daysBack),
+      effect: status === '已退回' ? '较差' : '良好',
+      status,
+      rejectReason: status === '已退回' ? REJECT_REASONS[ci % REJECT_REASONS.length] : undefined,
+      reviewOpinion: status === '已通过' ? REVIEW_OPINIONS[ci % REVIEW_OPINIONS.length] : undefined,
+    });
+  }
+
+  return result;
+}
+
+export const caseReviews = generateCaseReviews();
+
+// ============================================================
+// 生成巡查记录 inspectionRecords
+// ============================================================
+function generateInspectionRecords(): InspectionRecord[] {
+  const result: InspectionRecord[] = [];
+  let id = 0;
+
+  // 蚌埠市：20 条
+  for (let i = 0; i < 20; i++) {
+    id++;
+    const ct = BB_COUNTY_TOWNS[i % BB_COUNTY_TOWNS.length];
+    const daysBack = i;
+    const hasProblem = i % 3 !== 2;
+    result.push({
+      id: String(id),
+      recordNo: `XC-2026-${pad(id, 3)}`,
+      date: daysBefore(daysBack),
+      inspector: NAMES[i % NAMES.length],
+      unit: '蚌埠市农业农村局',
+      type: i % 2 === 0 ? '随机抽查' : '定点抽查',
+      location: `蚌埠市${ct[0]}${ct[1]}`,
+      city: '蚌埠市',
+      result: hasProblem ? '发现问题' : '未发现问题',
+      problemDescription: hasProblem ? `${ct[0]}${ct[1]}${['发现耕地撂荒','发现非粮化种植','发现疑似割青行为','发现种植计划未落实','发现焚烧秸秆行为'][i % 5]}` : undefined,
+      photos: hasProblem ? [`/uploads/xc${pad(id, 3)}-1.jpg`] : [],
+    });
+  }
+
+  // 其他城市：约 15 条
+  for (let ci = 0; ci < OTHER_CITIES.length; ci++) {
+    const cd = OTHER_CITIES[ci];
+    const ct = cd.counties[0];
+    id++;
+    const daysBack = 5 + ci;
+    const hasProblem = ci % 3 !== 1;
+    result.push({
+      id: String(id),
+      recordNo: `XC-2026-${pad(id, 3)}`,
+      date: daysBefore(daysBack),
+      inspector: NAMES[ci % NAMES.length],
+      unit: `${cd.city}农业农村局`,
+      type: ci % 2 === 0 ? '随机抽查' : '定点抽查',
+      location: `${cd.city}${ct[0]}${ct[1]}`,
+      city: cd.city,
+      result: hasProblem ? '发现问题' : '未发现问题',
+      problemDescription: hasProblem ? `${ct[0]}${ct[1]}${['发现耕地撂荒','发现非粮化种植','发现疑似割青行为'][ci % 3]}` : undefined,
+      photos: hasProblem ? [`/uploads/xc${pad(id, 3)}-1.jpg`] : [],
+    });
+  }
+
+  return result;
+}
+
+export const inspectionRecords: InspectionRecord[] = generateInspectionRecords();
+
+// ============================================================
+// 生成巡查 patrols
+// ============================================================
+function generatePatrols() {
+  interface Patrol {
+    id: string;
+    patrolNo: string;
+    date: string;
+    location: string;
+    city: string;
+    type: string;
+    hasProblem: boolean;
+  }
+
+  const result: Patrol[] = [];
+  let id = 0;
+
+  // 蚌埠市：20 条
+  for (let i = 0; i < 20; i++) {
+    id++;
+    const ct = BB_COUNTY_TOWNS[i % BB_COUNTY_TOWNS.length];
+    const daysBack = i;
+    result.push({
+      id: String(id),
+      patrolNo: `XL-2026-${pad(id, 3)}`,
+      date: daysBefore(daysBack),
+      location: `蚌埠市${ct[0]}${ct[1]}`,
+      city: '蚌埠市',
+      type: PATROL_TYPES[i % PATROL_TYPES.length],
+      hasProblem: i % 3 !== 2,
+    });
+  }
+
+  // 其他城市：约 15 条
+  for (let ci = 0; ci < OTHER_CITIES.length; ci++) {
+    const cd = OTHER_CITIES[ci];
+    const ct = cd.counties[0];
+    id++;
+    const daysBack = 3 + ci;
+    result.push({
+      id: String(id),
+      patrolNo: `XL-2026-${pad(id, 3)}`,
+      date: daysBefore(daysBack),
+      location: `${cd.city}${ct[0]}${ct[1]}`,
+      city: cd.city,
+      type: PATROL_TYPES[ci % PATROL_TYPES.length],
+      hasProblem: ci % 3 !== 1,
+    });
+  }
+
+  return result;
+}
+
+export const patrols = generatePatrols();
+
+// ============================================================
+// 生成预警 alerts
+// ============================================================
+function generateAlerts(): Alert[] {
+  const result: Alert[] = [];
+  const alertData: [Alert['type'], string, number, string?, string?][] = [
+    ['danger','蚌埠市怀远县3个图斑超期未处置，超期已达7天以上',0,'蚌埠市','立即处理'],
+    ['danger','蚌埠市固镇县非粮化问题持续恶化，整改逾期未完成',0,'蚌埠市','立即处理'],
+    ['danger','阜阳市临泉县疑似违规割青事件待确认，涉及面积5.67亩',1,'阜阳市','立即处理'],
+    ['danger','宿州市砀山县非粮化问题持续恶化，整改逾期未完成',1,'宿州市','立即处理'],
+    ['danger','六安市霍邱县撂荒面积持续扩大，本月新增4处',2,'六安市','立即处理'],
+    ['danger','亳州市涡阳县秸秆焚烧火点被卫星监测到，需紧急核查',2,'亳州市','立即处理'],
+    ['warning','蚌埠市待核查图斑超过50个，请加快核查进度',0,'蚌埠市','查看详情'],
+    ['warning','蚌埠市五河县2个整改任务即将到期，请及时跟进',1,'蚌埠市','查看详情'],
+    ['warning','阜阳市颍上县2个整改任务即将到期，请及时跟进',2,'阜阳市','查看详情'],
+    ['warning','合肥市肥东县撂荒图斑核查完成率低于全省平均水平',3,'合肥市','查看详情'],
+    ['warning','滁州市定远县3个核查任务即将超期，剩余2天',3,'滁州市','查看详情'],
+    ['warning','安庆市怀宁县非粮化整改进度缓慢，当前仅完成35%',4,'安庆市','查看详情'],
+    ['warning','宿州市萧县本月新增图斑数量较多，需加强巡查力度',5,'宿州市','查看详情'],
+    ['warning','淮南市凤台县撂荒复耕率未达标，需加大推进力度',5,'淮南市','查看详情'],
+    ['info','芜湖市鸠江区本月图斑处置率达到95%，表现优秀',0,'芜湖市','查看详情'],
+    ['info','马鞍山市当涂县种植计划落实情况良好，已全部完成',1,'马鞍山市','查看详情'],
+    ['info','蚌埠市禹会区整改完成率位居全市前列',2,'蚌埠市','查看详情'],
+    ['info','黄山市歙县本月无新增图斑，粮食安全态势良好',3,'黄山市','查看详情'],
+    ['info','铜陵市枞阳县整改完成率位居全省前列',4,'铜陵市','查看详情'],
+    ['info','池州市东至县完成秋季种植计划核查，结果正常',5,'池州市','查看详情'],
+  ];
+
+  for (let i = 0; i < alertData.length; i++) {
+    const [type, message, daysBack, city, action] = alertData[i];
+    const d = new Date(2026, 5, 20 - daysBack);
+    const hour = 7 + (i * 3) % 14;
+    const minute = (i * 17) % 60;
+    result.push({
+      id: String(i + 1),
+      type,
+      message,
+      time: `${d.getFullYear()}-${pad(d.getMonth() + 1, 2)}-${pad(d.getDate(), 2)} ${pad(hour, 2)}:${pad(minute, 2)}`,
+      city,
+      action,
+    });
+  }
+
+  return result;
+}
+
+export const alerts: Alert[] = generateAlerts();
+
+// ============================================================
+// 首页统计数据
+// ============================================================
 export const homeStatistics: Statistics = {
   totalSpots: 2156,
   pendingCheck: 456,
@@ -22,31 +700,9 @@ export const homeStatistics: Statistics = {
   overdueCount: 18,
 };
 
-// ==================== 预警信息（20条） ====================
-export const alerts: Alert[] = [
-  { id: '1', type: 'danger', message: '蚌埠市怀远县3个图斑超期未处置，超期已达7天以上', time: '2026-06-20 10:30', city: '蚌埠市', action: '立即处理' },
-  { id: '2', type: 'danger', message: '阜阳市临泉县疑似违规割青事件待确认，涉及面积5.67亩', time: '2026-06-20 09:15', city: '阜阳市', action: '立即处理' },
-  { id: '3', type: 'danger', message: '宿州市砀山县非粮化问题持续恶化，整改逾期未完成', time: '2026-06-19 16:45', city: '宿州市', action: '立即处理' },
-  { id: '4', type: 'danger', message: '六安市霍邱县撂荒面积持续扩大，本月新增4处', time: '2026-06-19 14:20', city: '六安市', action: '立即处理' },
-  { id: '5', type: 'danger', message: '亳州市涡阳县秸秆焚烧火点被卫星监测到，需紧急核查', time: '2026-06-18 11:30', city: '亳州市', action: '立即处理' },
-  { id: '6', type: 'danger', message: '淮南市凤台县种植计划未落实面积超过100亩，需重点关注', time: '2026-06-18 09:00', city: '淮南市', action: '立即处理' },
-  { id: '7', type: 'warning', message: '蚌埠市待核查图斑超过50个，请加快核查进度', time: '2026-06-20 08:00', city: '蚌埠市', action: '查看详情' },
-  { id: '8', type: 'warning', message: '阜阳市颍上县2个整改任务即将到期，请及时跟进', time: '2026-06-19 15:30', city: '阜阳市', action: '查看详情' },
-  { id: '9', type: 'warning', message: '合肥市肥东县撂荒图斑核查完成率低于全省平均水平', time: '2026-06-19 10:45', city: '合肥市', action: '查看详情' },
-  { id: '10', type: 'warning', message: '滁州市定远县3个核查任务即将超期，剩余2天', time: '2026-06-18 16:20', city: '滁州市', action: '查看详情' },
-  { id: '11', type: 'warning', message: '安庆市望江县非粮化整改进度缓慢，当前仅完成35%', time: '2026-06-18 14:00', city: '安庆市', action: '查看详情' },
-  { id: '12', type: 'warning', message: '宿州市萧县本月新增图斑数量较多，需加强巡查力度', time: '2026-06-17 11:15', city: '宿州市', action: '查看详情' },
-  { id: '13', type: 'warning', message: '亳州市蒙城县结案审核退回率偏高，请关注审核质量', time: '2026-06-17 09:30', city: '亳州市', action: '查看详情' },
-  { id: '14', type: 'warning', message: '淮北市濉溪县撂荒复耕率未达标，需加大推进力度', time: '2026-06-16 15:45', city: '淮北市', action: '查看详情' },
-  { id: '15', type: 'info', message: '芜湖市鸠江区本月图斑处置率达到95%，表现优秀', time: '2026-06-20 07:30', city: '芜湖市', action: '查看详情' },
-  { id: '16', type: 'info', message: '马鞍山市当涂县种植计划落实情况良好，已全部完成', time: '2026-06-19 08:20', city: '马鞍山市', action: '查看详情' },
-  { id: '17', type: 'info', message: '黄山市歙县本月无新增图斑，粮食安全态势良好', time: '2026-06-18 10:00', city: '黄山市', action: '查看详情' },
-  { id: '18', type: 'info', message: '铜陵市枳阳县整改完成率位居全省前列', time: '2026-06-17 16:30', city: '铜陵市', action: '查看详情' },
-  { id: '19', type: 'info', message: '池州市东至县完成秋季种植计划核查，结果正常', time: '2026-06-16 09:45', city: '池州市', action: '查看详情' },
-  { id: '20', type: 'info', message: '宣城市郎溪县图斑处置进度稳步推进，无逾期任务', time: '2026-06-15 14:15', city: '宣城市', action: '查看详情' },
-];
-
-// ==================== 各市图斑分布数据（16市） ====================
+// ============================================================
+// 各市图斑分布数据（16市）
+// ============================================================
 export const citySpotDistribution: { city: string; count: number }[] = [
   { city: '蚌埠市', count: 312 },
   { city: '阜阳市', count: 287 },
@@ -66,398 +722,18 @@ export const citySpotDistribution: { city: string; count: number }[] = [
   { city: '黄山市', count: 28 },
 ];
 
-// ==================== 图斑处置进度（饼图） ====================
+// ============================================================
+// 图斑处置进度（饼图）
+// ============================================================
 export const spotProcessProgress = [
-  { name: '已结案', value: 62, color: 'var(--success)' },
-  { name: '整改中', value: 10, color: 'var(--warning)' },
-  { name: '待核查', value: 28, color: 'var(--info)' },
+  { name: '已结案', value: 856, color: 'var(--success)' },
+  { name: '整改中', value: 342, color: 'var(--warning)' },
+  { name: '待核查', value: 267, color: 'var(--info)' },
 ];
 
-// ==================== 监测批次列表（20条） ====================
-export const monitorBatches: MonitorBatch[] = [
-  { id: '1', batchNo: 'JM-2026-020', monitorDate: '2026-06-18', imageSource: '卫星遥感', region: '全省', spotCount: 467, suspectedCount: 92, resolution: '2米', coverage: '14万平方公里' },
-  { id: '2', batchNo: 'JM-2026-019', monitorDate: '2026-06-10', imageSource: '无人机', region: '蚌埠市', spotCount: 134, suspectedCount: 38, resolution: '0.5米', coverage: '5959平方公里' },
-  { id: '3', batchNo: 'JM-2026-018', monitorDate: '2026-06-05', imageSource: '卫星遥感', region: '阜阳市', spotCount: 156, suspectedCount: 45, resolution: '2米', coverage: '10118平方公里' },
-  { id: '4', batchNo: 'JM-2026-017', monitorDate: '2026-05-28', imageSource: '卫星遥感', region: '全省', spotCount: 423, suspectedCount: 78, resolution: '2米', coverage: '14万平方公里' },
-  { id: '5', batchNo: 'JM-2026-016', monitorDate: '2026-05-20', imageSource: '无人机', region: '宿州市', spotCount: 112, suspectedCount: 29, resolution: '0.5米', coverage: '9787平方公里' },
-  { id: '6', batchNo: 'JM-2026-015', monitorDate: '2026-05-15', imageSource: '卫星遥感', region: '六安市', spotCount: 98, suspectedCount: 23, resolution: '2米', coverage: '15451平方公里' },
-  { id: '7', batchNo: 'JM-2026-014', monitorDate: '2026-05-08', imageSource: '地面采集', region: '合肥市肥东县', spotCount: 45, suspectedCount: 12, resolution: '0.1米', coverage: '2215平方公里' },
-  { id: '8', batchNo: 'JM-2026-013', monitorDate: '2026-05-01', imageSource: '卫星遥感', region: '全省', spotCount: 389, suspectedCount: 67, resolution: '2米', coverage: '14万平方公里' },
-  { id: '9', batchNo: 'JM-2026-012', monitorDate: '2026-04-25', imageSource: '无人机', region: '亳州市', spotCount: 87, suspectedCount: 21, resolution: '0.5米', coverage: '8374平方公里' },
-  { id: '10', batchNo: 'JM-2026-011', monitorDate: '2026-04-18', imageSource: '卫星遥感', region: '滁州市', spotCount: 95, suspectedCount: 18, resolution: '2米', coverage: '13398平方公里' },
-  { id: '11', batchNo: 'JM-2026-010', monitorDate: '2026-04-10', imageSource: '卫星遥感', region: '安庆市', spotCount: 108, suspectedCount: 25, resolution: '2米', coverage: '13590平方公里' },
-  { id: '12', batchNo: 'JM-2026-009', monitorDate: '2026-04-03', imageSource: '地面采集', region: '淮南市凤台县', spotCount: 36, suspectedCount: 8, resolution: '0.1米', coverage: '1100平方公里' },
-  { id: '13', batchNo: 'JM-2026-008', monitorDate: '2026-03-28', imageSource: '卫星遥感', region: '全省', spotCount: 412, suspectedCount: 83, resolution: '2米', coverage: '14万平方公里' },
-  { id: '14', batchNo: 'JM-2026-007', monitorDate: '2026-03-20', imageSource: '无人机', region: '淮北市', spotCount: 56, suspectedCount: 14, resolution: '0.5米', coverage: '2741平方公里' },
-  { id: '15', batchNo: 'JM-2026-006', monitorDate: '2026-03-12', imageSource: '卫星遥感', region: '芜湖市', spotCount: 67, suspectedCount: 11, resolution: '2米', coverage: '6026平方公里' },
-  { id: '16', batchNo: 'JM-2026-005', monitorDate: '2026-03-05', imageSource: '卫星遥感', region: '宣城市', spotCount: 48, suspectedCount: 9, resolution: '2米', coverage: '12340平方公里' },
-  { id: '17', batchNo: 'JM-2026-004', monitorDate: '2026-02-25', imageSource: '卫星遥感', region: '全省', spotCount: 398, suspectedCount: 72, resolution: '2米', coverage: '14万平方公里' },
-  { id: '18', batchNo: 'JM-2026-003', monitorDate: '2026-02-15', imageSource: '无人机', region: '马鞍山市', spotCount: 42, suspectedCount: 7, resolution: '0.5米', coverage: '4049平方公里' },
-  { id: '19', batchNo: 'JM-2026-002', monitorDate: '2026-02-05', imageSource: '卫星遥感', region: '池州市', spotCount: 38, suspectedCount: 6, resolution: '2米', coverage: '8272平方公里' },
-  { id: '20', batchNo: 'JM-2026-001', monitorDate: '2026-01-20', imageSource: '卫星遥感', region: '全省', spotCount: 445, suspectedCount: 95, resolution: '2米', coverage: '14万平方公里' },
-];
-
-// ==================== 图斑列表（20条） ====================
-export const spots: Spot[] = [
-  {
-    id: '1', spotNo: 'TB-2026-001', problemType: '撂荒', area: 12.56, riskLevel: 'high',
-    location: '蚌埠市怀远县龙亢镇', city: '蚌埠市', county: '怀远县', town: '龙亢镇',
-    status: '待下发', discoverDate: '2026-06-20', batchNo: 'JM-2026-020',
-    coordinate: { lng: 117.18, lat: 33.12 }, deadline: '2026-07-20',
-  },
-  {
-    id: '2', spotNo: 'TB-2026-002', problemType: '撂荒', area: 8.34, riskLevel: 'medium',
-    location: '阜阳市临泉县鲖城镇', city: '阜阳市', county: '临泉县', town: '鲖城镇',
-    status: '待下发', discoverDate: '2026-06-18', batchNo: 'JM-2026-020',
-    coordinate: { lng: 115.26, lat: 33.08 }, deadline: '2026-07-18',
-  },
-  {
-    id: '3', spotNo: 'TB-2026-003', problemType: '非粮化', area: 15.78, riskLevel: 'high',
-    location: '宿州市砀山县唐寨镇', city: '宿州市', county: '砀山县', town: '唐寨镇',
-    status: '待核查', discoverDate: '2026-06-15', batchNo: 'JM-2026-019',
-    coordinate: { lng: 116.35, lat: 34.18 }, inspector: '王建国', deadline: '2026-06-25',
-  },
-  {
-    id: '4', spotNo: 'TB-2026-004', problemType: '撂荒', area: 6.92, riskLevel: 'medium',
-    location: '六安市霍邱县周集镇', city: '六安市', county: '霍邱县', town: '周集镇',
-    status: '待核查', discoverDate: '2026-06-12', batchNo: 'JM-2026-019',
-    coordinate: { lng: 116.25, lat: 32.33 }, inspector: '李志强', deadline: '2026-06-22',
-  },
-  {
-    id: '5', spotNo: 'TB-2026-005', problemType: '疑似割青', area: 4.23, riskLevel: 'low',
-    location: '合肥市肥东县店埠镇', city: '合肥市', county: '肥东县', town: '店埠镇',
-    status: '待核查', discoverDate: '2026-06-08', batchNo: 'JM-2026-018',
-    coordinate: { lng: 117.47, lat: 31.88 }, inspector: '张伟', deadline: '2026-06-18',
-  },
-  {
-    id: '6', spotNo: 'TB-2026-006', problemType: '撂荒', area: 18.45, riskLevel: 'high',
-    location: '亳州市涡阳县高炉镇', city: '亳州市', county: '涡阳县', town: '高炉镇',
-    status: '核查中', discoverDate: '2026-06-05', batchNo: 'JM-2026-018',
-    coordinate: { lng: 116.23, lat: 33.89 }, inspector: '赵明', deadline: '2026-06-15',
-  },
-  {
-    id: '7', spotNo: 'TB-2026-007', problemType: '非粮化', area: 9.67, riskLevel: 'medium',
-    location: '滁州市定远县藕塘镇', city: '滁州市', county: '定远县', town: '藕塘镇',
-    status: '核查中', discoverDate: '2026-05-28', batchNo: 'JM-2026-017',
-    coordinate: { lng: 117.68, lat: 32.52 }, inspector: '陈刚', deadline: '2026-06-07',
-  },
-  {
-    id: '8', spotNo: 'TB-2026-008', problemType: '撂荒', area: 3.56, riskLevel: 'low',
-    location: '芜湖市南陵县许镇镇', city: '芜湖市', county: '南陵县', town: '许镇镇',
-    status: '核查中', discoverDate: '2026-05-22', batchNo: 'JM-2026-017',
-    coordinate: { lng: 118.33, lat: 31.15 }, inspector: '刘洋', deadline: '2026-06-01',
-  },
-  {
-    id: '9', spotNo: 'TB-2026-009', problemType: '非粮化', area: 22.13, riskLevel: 'high',
-    location: '蚌埠市五河县头铺镇', city: '蚌埠市', county: '五河县', town: '头铺镇',
-    status: '待上报', discoverDate: '2026-05-15', batchNo: 'JM-2026-013',
-    coordinate: { lng: 117.89, lat: 33.14 }, inspector: '孙磊', deadline: '2026-05-25',
-  },
-  {
-    id: '10', spotNo: 'TB-2026-010', problemType: '种植计划未落实', area: 7.89, riskLevel: 'medium',
-    location: '淮南市凤台县新集镇', city: '淮南市', county: '凤台县', town: '新集镇',
-    status: '待上报', discoverDate: '2026-05-10', batchNo: 'JM-2026-013',
-    coordinate: { lng: 116.65, lat: 32.71 }, inspector: '周涛', deadline: '2026-05-20',
-  },
-  {
-    id: '11', spotNo: 'TB-2026-011', problemType: '非粮化', area: 5.34, riskLevel: 'low',
-    location: '安庆市怀宁县茶岭镇', city: '安庆市', county: '怀宁县', town: '茶岭镇',
-    status: '待审核', discoverDate: '2026-05-03', batchNo: 'JM-2026-010',
-    coordinate: { lng: 116.93, lat: 30.73 }, inspector: '吴斌', deadline: '2026-05-13',
-  },
-  {
-    id: '12', spotNo: 'TB-2026-012', problemType: '疑似割青', area: 2.87, riskLevel: 'high',
-    location: '阜阳市太和县旧县镇', city: '阜阳市', county: '太和县', town: '旧县镇',
-    status: '待审核', discoverDate: '2026-04-25', batchNo: 'JM-2026-008',
-    coordinate: { lng: 115.62, lat: 33.16 }, inspector: '郑华', deadline: '2026-05-05',
-  },
-  {
-    id: '13', spotNo: 'TB-2026-013', problemType: '非粮化', area: 11.24, riskLevel: 'medium',
-    location: '宿州市萧县黄口镇', city: '宿州市', county: '萧县', town: '黄口镇',
-    status: '整改中', discoverDate: '2026-04-18', batchNo: 'JM-2026-008',
-    coordinate: { lng: 116.79, lat: 34.02 }, inspector: '马超', deadline: '2026-05-18',
-  },
-  {
-    id: '14', spotNo: 'TB-2026-014', problemType: '疑似割青', area: 1.98, riskLevel: 'high',
-    location: '六安市舒城县干汊河镇', city: '六安市', county: '舒城县', town: '干汊河镇',
-    status: '整改中', discoverDate: '2026-04-10', batchNo: 'JM-2026-006',
-    coordinate: { lng: 116.72, lat: 31.46 }, inspector: '黄勇', deadline: '2026-05-10',
-  },
-  {
-    id: '15', spotNo: 'TB-2026-015', problemType: '种植计划未落实', area: 16.45, riskLevel: 'medium',
-    location: '亳州市蒙城县小涧镇', city: '亳州市', county: '蒙城县', town: '小涧镇',
-    status: '整改中', discoverDate: '2026-03-28', batchNo: 'JM-2026-006',
-    coordinate: { lng: 116.56, lat: 33.28 }, inspector: '杨帆', deadline: '2026-04-27',
-  },
-  {
-    id: '16', spotNo: 'TB-2026-016', problemType: '非粮化', area: 4.56, riskLevel: 'low',
-    location: '宣城市泾县丁家桥镇', city: '宣城市', county: '泾县', town: '丁家桥镇',
-    status: '待验收', discoverDate: '2026-03-15', batchNo: 'JM-2026-004',
-    coordinate: { lng: 118.42, lat: 30.72 }, inspector: '徐鹏', deadline: '2026-04-14',
-  },
-  {
-    id: '17', spotNo: 'TB-2026-017', problemType: '种植计划未落实', area: 8.92, riskLevel: 'medium',
-    location: '合肥市庐江县同大镇', city: '合肥市', county: '庐江县', town: '同大镇',
-    status: '待验收', discoverDate: '2026-03-05', batchNo: 'JM-2026-004',
-    coordinate: { lng: 117.29, lat: 31.56 }, inspector: '何俊', deadline: '2026-04-04',
-  },
-  {
-    id: '18', spotNo: 'TB-2026-018', problemType: '焚烧秸秆', area: 3.21, riskLevel: 'low',
-    location: '蚌埠市固镇县连城镇', city: '蚌埠市', county: '固镇县', town: '连城镇',
-    status: '已结案', discoverDate: '2026-02-20', batchNo: 'JM-2026-003',
-    coordinate: { lng: 117.32, lat: 33.32 }, inspector: '罗峰', deadline: '2026-03-22',
-  },
-  {
-    id: '19', spotNo: 'TB-2026-019', problemType: '焚烧秸秆', area: 2.45, riskLevel: 'medium',
-    location: '滁州市明光市潘村镇', city: '滁州市', county: '明光市', town: '潘村镇',
-    status: '已结案', discoverDate: '2026-02-10', batchNo: 'JM-2026-002',
-    coordinate: { lng: 117.98, lat: 32.78 }, inspector: '谢军', deadline: '2026-03-12',
-  },
-  {
-    id: '20', spotNo: 'TB-2026-020', problemType: '其他', area: 1.23, riskLevel: 'low',
-    location: '阜阳市阜南县郜台乡', city: '阜阳市', county: '阜南县', town: '郜台乡',
-    status: '需复查', discoverDate: '2026-01-15', batchNo: 'JM-2026-001',
-    coordinate: { lng: 115.83, lat: 32.63 }, inspector: '韩磊', deadline: '2026-02-14',
-  },
-];
-
-// ==================== 事件列表（20条） ====================
-export const events: Event[] = [
-  {
-    id: '1', eventNo: 'SJ-2026-001', eventType: '撂荒', location: '蚌埠市怀远县龙亢镇汪圩村西侧',
-    city: '蚌埠市', county: '怀远县', town: '龙亢镇',
-    reportTime: '2026-06-20 09:30', reporter: '刘德明', reporterPhone: '13856237891',
-    area: 12.56, description: '群众举报龙亢镇汪圩村西侧约12.56亩耕地长期闲置撂荒，杂草丛生，已超过两年未种植粮食作物，严重影响粮食生产能力',
-    status: '待受理', photos: ['/uploads/sj001-1.jpg', '/uploads/sj001-2.jpg'],
-    coordinate: { lng: 117.18, lat: 33.12 },
-  },
-  {
-    id: '2', eventNo: 'SJ-2026-002', eventType: '撂荒', location: '阜阳市临泉县鲖城镇杨庄村北侧',
-    city: '阜阳市', county: '临泉县', town: '鲖城镇',
-    reportTime: '2026-06-18 14:20', reporter: '张秀兰', reporterPhone: '13967812345',
-    area: 8.34, description: '临泉县鲖城镇杨庄村北侧8.34亩耕地撂荒，原承包户外出务工导致土地无人耕种，需协调流转或复耕',
-    status: '待受理', photos: ['/uploads/sj002-1.jpg'],
-    coordinate: { lng: 115.26, lat: 33.08 },
-  },
-  {
-    id: '3', eventNo: 'SJ-2026-003', eventType: '非粮化', location: '宿州市砀山县唐寨镇侯口村',
-    city: '宿州市', county: '砀山县', town: '唐寨镇',
-    reportTime: '2026-06-15 10:45', reporter: '王建军', reporterPhone: '13756893421',
-    area: 15.78, description: '砀山县唐寨镇侯口村15.78亩永久基本农田被改种果树，违反基本农田保护条例，需立即整改恢复粮食种植',
-    status: '待核查', photos: ['/uploads/sj003-1.jpg', '/uploads/sj003-2.jpg', '/uploads/sj003-3.jpg'],
-    coordinate: { lng: 116.35, lat: 34.18 },
-  },
-  {
-    id: '4', eventNo: 'SJ-2026-004', eventType: '撂荒', location: '六安市霍邱县周集镇洪台村',
-    city: '六安市', county: '霍邱县', town: '周集镇',
-    reportTime: '2026-06-12 16:30', reporter: '陈志远', reporterPhone: '13678945612',
-    area: 6.92, description: '霍邱县周集镇洪台村6.92亩耕地因排灌设施损坏导致撂荒，田间水利设施年久失修，雨季积水严重无法耕种',
-    status: '待核查', photos: ['/uploads/sj004-1.jpg'],
-    coordinate: { lng: 116.25, lat: 32.33 },
-  },
-  {
-    id: '5', eventNo: 'SJ-2026-005', eventType: '疑似割青', location: '合肥市肥东县店埠镇西山驿村',
-    city: '合肥市', county: '肥东县', town: '店埠镇',
-    reportTime: '2026-06-08 08:15', reporter: '赵国强', reporterPhone: '13567891234',
-    area: 4.23, description: '肥东县店埠镇西山驿村4.23亩小麦田疑似被提前收割作青贮饲料，正值灌浆期的小麦被大面积割倒',
-    status: '待核查', photos: ['/uploads/sj005-1.jpg', '/uploads/sj005-2.jpg'],
-    coordinate: { lng: 117.47, lat: 31.88 },
-  },
-  {
-    id: '6', eventNo: 'SJ-2026-006', eventType: '撂荒', location: '亳州市涡阳县高炉镇大刘村',
-    city: '亳州市', county: '涡阳县', town: '高炉镇',
-    reportTime: '2026-06-05 11:20', reporter: '孙明辉', reporterPhone: '13845678912',
-    area: 18.45, description: '涡阳县高炉镇大刘村18.45亩耕地撂荒，涉及3户承包户，其中2户长期在外务工，1户因家庭困难无力耕种',
-    status: '核查中', photos: ['/uploads/sj006-1.jpg'],
-    coordinate: { lng: 116.23, lat: 33.89 },
-  },
-  {
-    id: '7', eventNo: 'SJ-2026-007', eventType: '非粮化', location: '滁州市定远县藕塘镇仁和村',
-    city: '滁州市', county: '定远县', town: '藕塘镇',
-    reportTime: '2026-05-28 15:40', reporter: '周文博', reporterPhone: '13912345678',
-    area: 9.67, description: '定远县藕塘镇仁和村9.67亩基本农田被改挖鱼塘从事水产养殖，破坏耕作层，需责令恢复并处罚',
-    status: '核查中', photos: ['/uploads/sj007-1.jpg', '/uploads/sj007-2.jpg'],
-    coordinate: { lng: 117.68, lat: 32.52 },
-  },
-  {
-    id: '8', eventNo: 'SJ-2026-008', eventType: '撂荒', location: '芜湖市南陵县许镇镇仙坊村',
-    city: '芜湖市', county: '南陵县', town: '许镇镇',
-    reportTime: '2026-05-22 09:50', reporter: '吴晓东', reporterPhone: '13689123456',
-    area: 3.56, description: '南陵县许镇镇仙坊村3.56亩耕地撂荒，该地块位于圩区边缘，地势低洼易涝，农户放弃耕种',
-    status: '核查中', photos: ['/uploads/sj008-1.jpg'],
-    coordinate: { lng: 118.33, lat: 31.15 },
-  },
-  {
-    id: '9', eventNo: 'SJ-2026-009', eventType: '非粮化', location: '蚌埠市五河县头铺镇凌欧村',
-    city: '蚌埠市', county: '五河县', town: '头铺镇',
-    reportTime: '2026-05-15 13:25', reporter: '郑伟民', reporterPhone: '13791234567',
-    area: 22.13, description: '五河县头铺镇凌欧村22.13亩耕地被改种苗木花卉，违反耕地用途管制要求，涉及面积较大需重点督办',
-    status: '待审核', photos: ['/uploads/sj009-1.jpg', '/uploads/sj009-2.jpg', '/uploads/sj009-3.jpg'],
-    coordinate: { lng: 117.89, lat: 33.14 },
-  },
-  {
-    id: '10', eventNo: 'SJ-2026-010', eventType: '种植计划未落实', location: '淮南市凤台县新集镇姚湾村',
-    city: '淮南市', county: '凤台县', town: '新集镇',
-    reportTime: '2026-05-10 10:10', reporter: '马德才', reporterPhone: '13589123456',
-    area: 7.89, description: '凤台县新集镇姚湾村7.89亩耕地未按种植计划落实水稻种植，实际种植了蔬菜，偏离粮食种植计划要求',
-    status: '待审核', photos: ['/uploads/sj010-1.jpg'],
-    coordinate: { lng: 116.65, lat: 32.71 },
-  },
-  {
-    id: '11', eventNo: 'SJ-2026-011', eventType: '非粮化', location: '安庆市怀宁县茶岭镇万福村',
-    city: '安庆市', county: '怀宁县', town: '茶岭镇',
-    reportTime: '2026-05-03 16:55', reporter: '黄志刚', reporterPhone: '13891234567',
-    area: 5.34, description: '怀宁县茶岭镇万福村5.34亩耕地被用于建设临时仓储设施，地面已硬化，需拆除恢复耕种条件',
-    status: '待审核', photos: ['/uploads/sj011-1.jpg', '/uploads/sj011-2.jpg'],
-    coordinate: { lng: 116.93, lat: 30.73 },
-  },
-  {
-    id: '12', eventNo: 'SJ-2026-012', eventType: '疑似割青', location: '阜阳市太和县旧县镇宋沟村',
-    city: '阜阳市', county: '太和县', town: '旧县镇',
-    reportTime: '2026-04-25 08:30', reporter: '杨永红', reporterPhone: '13612345678',
-    area: 2.87, description: '太和县旧县镇宋沟村2.87亩小麦田疑似被提前收割，经初步核查为农户因小麦倒伏严重而提前收割，需进一步确认',
-    status: '已结案', photos: ['/uploads/sj012-1.jpg'],
-    coordinate: { lng: 115.62, lat: 33.16 },
-  },
-  {
-    id: '13', eventNo: 'SJ-2026-013', eventType: '非粮化', location: '宿州市萧县黄口镇杨楼村',
-    city: '宿州市', county: '萧县', town: '黄口镇',
-    reportTime: '2026-04-18 14:40', reporter: '徐德胜', reporterPhone: '13712345678',
-    area: 11.24, description: '萧县黄口镇杨楼村11.24亩基本农田被改种中药材白芍，违反基本农田种植粮食作物要求',
-    status: '已结案', photos: ['/uploads/sj013-1.jpg', '/uploads/sj013-2.jpg'],
-    coordinate: { lng: 116.79, lat: 34.02 },
-  },
-  {
-    id: '14', eventNo: 'SJ-2026-014', eventType: '疑似割青', location: '六安市舒城县干汊河镇新陶村',
-    city: '六安市', county: '舒城县', town: '干汊河镇',
-    reportTime: '2026-04-10 11:15', reporter: '何建平', reporterPhone: '13523456789',
-    area: 1.98, description: '舒城县干汊河镇新陶村1.98亩小麦田疑似割青，经核查确认为农户将成熟小麦收割后种植下一季作物，属正常农事活动',
-    status: '已结案', photos: ['/uploads/sj014-1.jpg'],
-    coordinate: { lng: 116.72, lat: 31.46 },
-  },
-  {
-    id: '15', eventNo: 'SJ-2026-015', eventType: '种植计划未落实', location: '亳州市蒙城县小涧镇齐山村',
-    city: '亳州市', county: '蒙城县', town: '小涧镇',
-    reportTime: '2026-03-28 09:25', reporter: '罗文斌', reporterPhone: '13823456789',
-    area: 16.45, description: '蒙城县小涧镇齐山村16.45亩耕地未按计划种植小麦，实际种植了中药材和蔬菜，偏离粮食种植计划',
-    status: '已结案', photos: ['/uploads/sj015-1.jpg', '/uploads/sj015-2.jpg'],
-    coordinate: { lng: 116.56, lat: 33.28 },
-  },
-  {
-    id: '16', eventNo: 'SJ-2026-016', eventType: '非粮化', location: '宣城市泾县丁家桥镇李园村',
-    city: '宣城市', county: '泾县', town: '丁家桥镇',
-    reportTime: '2026-03-15 15:30', reporter: '谢志远', reporterPhone: '13634567891',
-    area: 4.56, description: '泾县丁家桥镇李园村4.56亩耕地被改种观赏苗木，经核查属实，已责令限期整改恢复粮食种植',
-    status: '已结案', photos: ['/uploads/sj016-1.jpg'],
-    coordinate: { lng: 118.42, lat: 30.72 },
-  },
-  {
-    id: '17', eventNo: 'SJ-2026-017', eventType: '种植计划未落实', location: '合肥市庐江县同大镇魏荡村',
-    city: '合肥市', county: '庐江县', town: '同大镇',
-    reportTime: '2026-03-05 10:50', reporter: '韩永刚', reporterPhone: '13734567891',
-    area: 8.92, description: '庐江县同大镇魏荡村8.92亩耕地未按计划种植水稻，实际种植了莲藕，不符合粮食种植计划要求',
-    status: '已结案', photos: ['/uploads/sj017-1.jpg', '/uploads/sj017-2.jpg'],
-    coordinate: { lng: 117.29, lat: 31.56 },
-  },
-  {
-    id: '18', eventNo: 'SJ-2026-018', eventType: '焚烧秸秆', location: '蚌埠市固镇县连城镇殷里村',
-    city: '蚌埠市', county: '固镇县', town: '连城镇',
-    reportTime: '2026-02-20 17:20', reporter: '宋明华', reporterPhone: '13545678912',
-    area: 3.21, description: '固镇县连城镇殷里村3.21亩农田发现露天焚烧秸秆行为，产生大量浓烟影响空气质量，违反秸秆禁烧规定',
-    status: '已驳回', photos: ['/uploads/sj018-1.jpg'],
-    coordinate: { lng: 117.32, lat: 33.32 },
-  },
-  {
-    id: '19', eventNo: 'SJ-2026-019', eventType: '焚烧秸秆', location: '滁州市明光市潘村镇紫阳村',
-    city: '滁州市', county: '明光市', town: '潘村镇',
-    reportTime: '2026-02-10 12:35', reporter: '唐国栋', reporterPhone: '13845678923',
-    area: 2.45, description: '明光市潘村镇紫阳村2.45亩农田焚烧秸秆，经核查为农户在禁烧期违规焚烧，已进行处罚教育',
-    status: '已驳回', photos: ['/uploads/sj019-1.jpg', '/uploads/sj019-2.jpg'],
-    coordinate: { lng: 117.98, lat: 32.78 },
-  },
-  {
-    id: '20', eventNo: 'SJ-2026-020', eventType: '其他', location: '阜阳市阜南县郜台乡刘店村',
-    city: '阜阳市', county: '阜南县', town: '郜台乡',
-    reportTime: '2026-01-15 08:45', reporter: '曹文辉', reporterPhone: '13656789123',
-    area: 1.23, description: '阜南县郜台乡刘店村1.23亩耕地出现异常，疑似被倾倒建筑垃圾覆盖，需现场核实确认',
-    status: '已驳回', photos: ['/uploads/sj020-1.jpg'],
-    coordinate: { lng: 115.83, lat: 32.63 },
-  },
-];
-
-// ==================== 核查任务列表（20条） ====================
-export const inspectionTasks: InspectionTask[] = [
-  { id: '1', taskNo: 'HC-2026-001', spotNo: 'TB-2026-003', type: '非粮化', location: '宿州市砀山县唐寨镇', city: '宿州市', area: 15.78, assignTime: '2026-06-16', deadline: '2026-06-26', status: '待核查', inspector: '王建国' },
-  { id: '2', taskNo: 'HC-2026-002', spotNo: 'TB-2026-004', type: '撂荒', location: '六安市霍邱县周集镇', city: '六安市', area: 6.92, assignTime: '2026-06-13', deadline: '2026-06-23', status: '待核查', inspector: '李志强' },
-  { id: '3', taskNo: 'HC-2026-003', eventNo: 'SJ-2026-005', type: '疑似割青', location: '合肥市肥东县店埠镇', city: '合肥市', area: 4.23, assignTime: '2026-06-09', deadline: '2026-06-19', status: '待核查', inspector: '张伟', overdue: true, overdueDays: 4 },
-  { id: '4', taskNo: 'HC-2026-004', spotNo: 'TB-2026-005', type: '疑似割青', location: '合肥市肥东县店埠镇', city: '合肥市', area: 4.23, assignTime: '2026-06-09', deadline: '2026-06-16', status: '待核查', inspector: '赵明', overdue: true, overdueDays: 7 },
-  { id: '5', taskNo: 'HC-2026-005', eventNo: 'SJ-2026-004', type: '撂荒', location: '六安市霍邱县周集镇', city: '六安市', area: 6.92, assignTime: '2026-06-13', deadline: '2026-06-20', status: '待核查', inspector: '陈刚' },
-  { id: '6', taskNo: 'HC-2026-006', spotNo: 'TB-2026-006', type: '撂荒', location: '亳州市涡阳县高炉镇', city: '亳州市', area: 18.45, assignTime: '2026-06-06', deadline: '2026-06-16', status: '核查中', inspector: '赵明' },
-  { id: '7', taskNo: 'HC-2026-007', spotNo: 'TB-2026-007', type: '非粮化', location: '滁州市定远县藕塘镇', city: '滁州市', area: 9.67, assignTime: '2026-05-29', deadline: '2026-06-08', status: '核查中', inspector: '陈刚' },
-  { id: '8', taskNo: 'HC-2026-008', spotNo: 'TB-2026-008', type: '撂荒', location: '芜湖市南陵县许镇镇', city: '芜湖市', area: 3.56, assignTime: '2026-05-23', deadline: '2026-06-02', status: '核查中', inspector: '刘洋' },
-  { id: '9', taskNo: 'HC-2026-009', eventNo: 'SJ-2026-007', type: '非粮化', location: '滁州市定远县藕塘镇', city: '滁州市', area: 9.67, assignTime: '2026-05-29', deadline: '2026-06-05', status: '核查中', inspector: '孙磊' },
-  { id: '10', taskNo: 'HC-2026-010', eventNo: 'SJ-2026-006', type: '撂荒', location: '亳州市涡阳县高炉镇', city: '亳州市', area: 18.45, assignTime: '2026-06-06', deadline: '2026-06-13', status: '核查中', inspector: '周涛' },
-  { id: '11', taskNo: 'HC-2026-011', spotNo: 'TB-2026-009', type: '非粮化', location: '蚌埠市五河县头铺镇', city: '蚌埠市', area: 22.13, assignTime: '2026-05-16', deadline: '2026-05-26', status: '已完成', inspector: '孙磊', result: '问题属实' },
-  { id: '12', taskNo: 'HC-2026-012', spotNo: 'TB-2026-010', type: '种植计划未落实', location: '淮南市凤台县新集镇', city: '淮南市', area: 7.89, assignTime: '2026-05-11', deadline: '2026-05-21', status: '已完成', inspector: '周涛', result: '问题属实' },
-  { id: '13', taskNo: 'HC-2026-013', spotNo: 'TB-2026-011', type: '非粮化', location: '安庆市怀宁县茶岭镇', city: '安庆市', area: 5.34, assignTime: '2026-05-04', deadline: '2026-05-14', status: '已完成', inspector: '吴斌', result: '问题属实' },
-  { id: '14', taskNo: 'HC-2026-014', spotNo: 'TB-2026-012', type: '疑似割青', location: '阜阳市太和县旧县镇', city: '阜阳市', area: 2.87, assignTime: '2026-04-26', deadline: '2026-05-06', status: '已完成', inspector: '郑华', result: '问题不属实' },
-  { id: '15', taskNo: 'HC-2026-015', spotNo: 'TB-2026-013', type: '非粮化', location: '宿州市萧县黄口镇', city: '宿州市', area: 11.24, assignTime: '2026-04-19', deadline: '2026-04-29', status: '已完成', inspector: '马超', result: '问题属实', overdue: true, overdueDays: 3 },
-  { id: '16', taskNo: 'HC-2026-016', spotNo: 'TB-2026-014', type: '疑似割青', location: '六安市舒城县干汊河镇', city: '六安市', area: 1.98, assignTime: '2026-04-11', deadline: '2026-04-21', status: '已完成', inspector: '黄勇', result: '问题不属实' },
-  { id: '17', taskNo: 'HC-2026-017', spotNo: 'TB-2026-015', type: '种植计划未落实', location: '亳州市蒙城县小涧镇', city: '亳州市', area: 16.45, assignTime: '2026-03-29', deadline: '2026-04-08', status: '已完成', inspector: '杨帆', result: '问题属实' },
-  { id: '18', taskNo: 'HC-2026-018', spotNo: 'TB-2026-018', type: '焚烧秸秆', location: '蚌埠市固镇县连城镇', city: '蚌埠市', area: 3.21, assignTime: '2026-02-21', deadline: '2026-03-03', status: '已完成', inspector: '罗峰', result: '问题属实' },
-  { id: '19', taskNo: 'HC-2026-019', spotNo: 'TB-2026-019', type: '焚烧秸秆', location: '滁州市明光市潘村镇', city: '滁州市', area: 2.45, assignTime: '2026-02-11', deadline: '2026-02-21', status: '已完成', inspector: '谢军', result: '问题属实', overdue: true, overdueDays: 5 },
-  { id: '20', taskNo: 'HC-2026-020', spotNo: 'TB-2026-020', type: '其他', location: '阜阳市阜南县郜台乡', city: '阜阳市', area: 1.23, assignTime: '2026-01-16', deadline: '2026-01-26', status: '已完成', inspector: '韩磊', result: '问题不属实' },
-];
-
-// ==================== 整改任务列表（20条） ====================
-export const rectificationTasks: RectificationTask[] = [
-  { id: '1', eventNo: 'SJ-2026-009', eventType: '非粮化', location: '蚌埠市五河县头铺镇凌欧村', city: '蚌埠市', responsiblePerson: '刘德明', responsibleUnit: '五河县农业农村局', deadline: '2026-07-15', status: '待整改', progress: 0, measures: ['清除苗木花卉', '恢复耕作层', '补种水稻'] },
-  { id: '2', eventNo: 'SJ-2026-010', eventType: '种植计划未落实', location: '淮南市凤台县新集镇姚湾村', city: '淮南市', responsiblePerson: '马德才', responsibleUnit: '凤台县农业农村局', deadline: '2026-07-10', status: '待整改', progress: 0, measures: ['调整种植结构', '落实水稻种植计划', '加强技术指导'] },
-  { id: '3', eventNo: 'SJ-2026-011', eventType: '非粮化', location: '安庆市怀宁县茶岭镇万福村', city: '安庆市', responsiblePerson: '黄志刚', responsibleUnit: '怀宁县农业农村局', deadline: '2026-07-20', status: '待整改', progress: 0, measures: ['拆除临时仓储设施', '清除地面硬化层', '恢复耕种条件', '补种粮食作物'] },
-  { id: '4', eventNo: 'SJ-2026-018', eventType: '焚烧秸秆', location: '蚌埠市固镇县连城镇殷里村', city: '蚌埠市', responsiblePerson: '宋明华', responsibleUnit: '固镇县农业农村局', deadline: '2026-06-30', status: '待整改', progress: 0, measures: ['秸秆还田处理', '签订禁烧承诺书', '加强巡查监管'] },
-  { id: '5', eventNo: 'SJ-2026-013', eventType: '非粮化', location: '宿州市萧县黄口镇杨楼村', city: '宿州市', responsiblePerson: '徐德胜', responsibleUnit: '萧县农业农村局', deadline: '2026-07-05', status: '整改中', progress: 45, measures: ['清除中药材作物', '土地翻耕平整', '补种玉米'] },
-  { id: '6', eventNo: 'SJ-2026-015', eventType: '种植计划未落实', location: '亳州市蒙城县小涧镇齐山村', city: '亳州市', responsiblePerson: '罗文斌', responsibleUnit: '蒙城县农业农村局', deadline: '2026-07-08', status: '整改中', progress: 60, measures: ['调整种植结构', '落实小麦种植', '加强政策宣传'] },
-  { id: '7', eventNo: 'SJ-2026-016', eventType: '非粮化', location: '宣城市泾县丁家桥镇李园村', city: '宣城市', responsiblePerson: '谢志远', responsibleUnit: '泾县农业农村局', deadline: '2026-06-25', status: '整改中', progress: 75, measures: ['清除观赏苗木', '土地翻耕', '播种水稻'] },
-  { id: '8', eventNo: 'SJ-2026-017', eventType: '种植计划未落实', location: '合肥市庐江县同大镇魏荡村', city: '合肥市', responsiblePerson: '韩永刚', responsibleUnit: '庐江县农业农村局', deadline: '2026-06-28', status: '整改中', progress: 30, measures: ['清除莲藕作物', '恢复水田条件', '落实水稻种植'] },
-  { id: '9', eventNo: 'SJ-2026-006', eventType: '撂荒', location: '亳州市涡阳县高炉镇大刘村', city: '亳州市', responsiblePerson: '孙明辉', responsibleUnit: '涡阳县农业农村局', deadline: '2026-07-12', status: '整改中', progress: 15, measures: ['协调土地流转', '组织代耕代种', '修复排灌设施'] },
-  { id: '10', eventNo: 'SJ-2026-007', eventType: '非粮化', location: '滁州市定远县藕塘镇仁和村', city: '滁州市', responsiblePerson: '周文博', responsibleUnit: '定远县农业农村局', deadline: '2026-07-18', status: '整改中', progress: 90, measures: ['回填鱼塘', '恢复耕作层', '补种水稻'] },
-  { id: '11', eventNo: 'SJ-2026-003', eventType: '非粮化', location: '宿州市砀山县唐寨镇侯口村', city: '宿州市', responsiblePerson: '王建军', responsibleUnit: '砀山县农业农村局', deadline: '2026-07-22', status: '整改中', progress: 60, measures: ['清除果树', '土地平整', '补种小麦'] },
-  { id: '12', eventNo: 'SJ-2026-001', eventType: '撂荒', location: '蚌埠市怀远县龙亢镇汪圩村', city: '蚌埠市', responsiblePerson: '刘德明', responsibleUnit: '怀远县农业农村局', deadline: '2026-06-20', status: '待验收', progress: 100, measures: ['清除杂草', '土地翻耕', '播种大豆'] },
-  { id: '13', eventNo: 'SJ-2026-002', eventType: '撂荒', location: '阜阳市临泉县鲖城镇杨庄村', city: '阜阳市', responsiblePerson: '张秀兰', responsibleUnit: '临泉县农业农村局', deadline: '2026-06-22', status: '待验收', progress: 100, measures: ['协调土地流转', '组织复耕', '补种玉米'] },
-  { id: '14', eventNo: 'SJ-2026-008', eventType: '撂荒', location: '芜湖市南陵县许镇镇仙坊村', city: '芜湖市', responsiblePerson: '吴晓东', responsibleUnit: '南陵县农业农村局', deadline: '2026-06-18', status: '待验收', progress: 100, measures: ['修建排涝设施', '土地翻耕', '播种水稻'] },
-  { id: '15', eventNo: 'SJ-2026-019', eventType: '焚烧秸秆', location: '滁州市明光市潘村镇紫阳村', city: '滁州市', responsiblePerson: '唐国栋', responsibleUnit: '明光市农业农村局', deadline: '2026-06-15', status: '待验收', progress: 100, measures: ['秸秆还田处理', '签订禁烧承诺书', '加强宣传教育'] },
-  { id: '16', eventNo: 'SJ-2026-012', eventType: '疑似割青', location: '阜阳市太和县旧县镇宋沟村', city: '阜阳市', responsiblePerson: '杨永红', responsibleUnit: '太和县农业农村局', deadline: '2026-05-30', status: '已完成', progress: 100, measures: ['核查确认正常收割', '加强割青行为监测'] },
-  { id: '17', eventNo: 'SJ-2026-014', eventType: '疑似割青', location: '六安市舒城县干汊河镇新陶村', city: '六安市', responsiblePerson: '何建平', responsibleUnit: '舒城县农业农村局', deadline: '2026-05-25', status: '已完成', progress: 100, measures: ['核查确认属正常农事', '加强疑似割青监测'] },
-  { id: '18', eventNo: 'SJ-2026-004', eventType: '撂荒', location: '六安市霍邱县周集镇洪台村', city: '六安市', responsiblePerson: '陈志远', responsibleUnit: '霍邱县农业农村局', deadline: '2026-05-20', status: '已完成', progress: 100, measures: ['修复排灌设施', '土地翻耕', '补种水稻'] },
-  { id: '19', eventNo: 'SJ-2026-020', eventType: '其他', location: '阜阳市阜南县郜台乡刘店村', city: '阜阳市', responsiblePerson: '曹文辉', responsibleUnit: '阜南县农业农村局', deadline: '2026-04-10', status: '已完成', progress: 100, measures: ['核查确认无建筑垃圾', '加强耕地保护巡查'] },
-  { id: '20', eventNo: 'SJ-2026-005', eventType: '疑似割青', location: '合肥市肥东县店埠镇西山驿村', city: '合肥市', responsiblePerson: '赵国强', responsibleUnit: '肥东县农业农村局', deadline: '2026-05-15', status: '已完成', progress: 100, measures: ['核查确认割青行为', '责令补种', '加强巡查监管'] },
-];
-
-// ==================== 巡查记录列表（20条） ====================
-export const inspectionRecords: InspectionRecord[] = [
-  { id: '1', recordNo: 'XC-2026-001', date: '2026-06-20', inspector: '王建国', unit: '安徽省农业农村厅', type: '随机抽查', location: '蚌埠市怀远县龙亢镇', city: '蚌埠市', result: '发现问题', problemDescription: '发现龙亢镇汪圩村西侧约12亩耕地撂荒，杂草高度超过1米', photos: ['/uploads/xc001-1.jpg', '/uploads/xc001-2.jpg'] },
-  { id: '2', recordNo: 'XC-2026-002', date: '2026-06-19', inspector: '李志强', unit: '安徽省农业农村厅', type: '定点抽查', location: '阜阳市临泉县鲖城镇', city: '阜阳市', result: '发现问题', problemDescription: '鲖城镇杨庄村北侧8亩耕地撂荒，原承包户长期外出务工', photos: ['/uploads/xc002-1.jpg'] },
-  { id: '3', recordNo: 'XC-2026-003', date: '2026-06-18', inspector: '张伟', unit: '安徽省农业农村厅', type: '随机抽查', location: '宿州市砀山县唐寨镇', city: '宿州市', result: '发现问题', problemDescription: '唐寨镇侯口村15亩基本农田改种果树，违反基本农田保护规定', photos: ['/uploads/xc003-1.jpg', '/uploads/xc003-2.jpg'] },
-  { id: '4', recordNo: 'XC-2026-004', date: '2026-06-17', inspector: '赵明', unit: '安徽省农业农村厅', type: '随机抽查', location: '六安市霍邱县周集镇', city: '六安市', result: '发现问题', problemDescription: '周集镇洪台村7亩耕地因排灌设施损坏撂荒', photos: ['/uploads/xc004-1.jpg'] },
-  { id: '5', recordNo: 'XC-2026-005', date: '2026-06-16', inspector: '陈刚', unit: '安徽省农业农村厅', type: '定点抽查', location: '合肥市肥东县店埠镇', city: '合肥市', result: '发现问题', problemDescription: '店埠镇西山驿村4亩小麦田疑似被提前收割作青贮', photos: ['/uploads/xc005-1.jpg'] },
-  { id: '6', recordNo: 'XC-2026-006', date: '2026-06-15', inspector: '刘洋', unit: '安徽省农业农村厅', type: '随机抽查', location: '亳州市涡阳县高炉镇', city: '亳州市', result: '发现问题', problemDescription: '高炉镇大刘村18亩耕地撂荒，涉及3户承包户', photos: ['/uploads/xc006-1.jpg', '/uploads/xc006-2.jpg'] },
-  { id: '7', recordNo: 'XC-2026-007', date: '2026-06-14', inspector: '孙磊', unit: '安徽省农业农村厅', type: '随机抽查', location: '滁州市定远县藕塘镇', city: '滁州市', result: '发现问题', problemDescription: '藕塘镇仁和村10亩基本农田被改挖鱼塘', photos: ['/uploads/xc007-1.jpg'] },
-  { id: '8', recordNo: 'XC-2026-008', date: '2026-06-13', inspector: '周涛', unit: '安徽省农业农村厅', type: '定点抽查', location: '芜湖市南陵县许镇镇', city: '芜湖市', result: '未发现问题', photos: [] },
-  { id: '9', recordNo: 'XC-2026-009', date: '2026-06-12', inspector: '吴斌', unit: '安徽省农业农村厅', type: '随机抽查', location: '蚌埠市五河县头铺镇', city: '蚌埠市', result: '发现问题', problemDescription: '头铺镇凌欧村22亩耕地被改种苗木花卉', photos: ['/uploads/xc009-1.jpg'] },
-  { id: '10', recordNo: 'XC-2026-010', date: '2026-06-11', inspector: '郑华', unit: '安徽省农业农村厅', type: '随机抽查', location: '淮南市凤台县新集镇', city: '淮南市', result: '发现问题', problemDescription: '新集镇姚湾村8亩耕地未按种植计划落实水稻种植', photos: ['/uploads/xc010-1.jpg'] },
-  { id: '11', recordNo: 'XC-2026-011', date: '2026-06-10', inspector: '马超', unit: '安徽省农业农村厅', type: '定点抽查', location: '安庆市怀宁县茶岭镇', city: '安庆市', result: '发现问题', problemDescription: '茶岭镇万福村5亩耕地被用于建设临时仓储设施', photos: ['/uploads/xc011-1.jpg', '/uploads/xc011-2.jpg'] },
-  { id: '12', recordNo: 'XC-2026-012', date: '2026-06-09', inspector: '黄勇', unit: '安徽省农业农村厅', type: '随机抽查', location: '阜阳市太和县旧县镇', city: '阜阳市', result: '未发现问题', photos: [] },
-  { id: '13', recordNo: 'XC-2026-013', date: '2026-06-08', inspector: '杨帆', unit: '安徽省农业农村厅', type: '随机抽查', location: '宿州市萧县黄口镇', city: '宿州市', result: '发现问题', problemDescription: '黄口镇杨楼村11亩基本农田改种中药材白芍', photos: ['/uploads/xc013-1.jpg'] },
-  { id: '14', recordNo: 'XC-2026-014', date: '2026-06-07', inspector: '徐鹏', unit: '安徽省农业农村厅', type: '定点抽查', location: '六安市舒城县干汊河镇', city: '六安市', result: '未发现问题', photos: [] },
-  { id: '15', recordNo: 'XC-2026-015', date: '2026-06-06', inspector: '何俊', unit: '安徽省农业农村厅', type: '随机抽查', location: '亳州市蒙城县小涧镇', city: '亳州市', result: '发现问题', problemDescription: '小涧镇齐山村16亩耕地未按计划种植小麦', photos: ['/uploads/xc015-1.jpg'] },
-  { id: '16', recordNo: 'XC-2026-016', date: '2026-06-05', inspector: '罗峰', unit: '安徽省农业农村厅', type: '定点抽查', location: '宣城市泾县丁家桥镇', city: '宣城市', result: '未发现问题', photos: [] },
-  { id: '17', recordNo: 'XC-2026-017', date: '2026-06-04', inspector: '谢军', unit: '安徽省农业农村厅', type: '随机抽查', location: '合肥市庐江县同大镇', city: '合肥市', result: '未发现问题', photos: [] },
-  { id: '18', recordNo: 'XC-2026-018', date: '2026-06-03', inspector: '韩磊', unit: '安徽省农业农村厅', type: '定点抽查', location: '蚌埠市固镇县连城镇', city: '蚌埠市', result: '未发现问题', photos: [] },
-  { id: '19', recordNo: 'XC-2026-019', date: '2026-06-02', inspector: '王建国', unit: '安徽省农业农村厅', type: '定点抽查', location: '滁州市明光市潘村镇', city: '滁州市', result: '未发现问题', photos: [] },
-  { id: '20', recordNo: 'XC-2026-020', date: '2026-06-01', inspector: '李志强', unit: '安徽省农业农村厅', type: '随机抽查', location: '阜阳市阜南县郜台乡', city: '阜阳市', result: '未发现问题', photos: [] },
-];
-
-// ==================== 城市统计排行（16市） ====================
+// ============================================================
+// 城市统计排行（16市）
+// ============================================================
 export const cityRankings: CityStatistics[] = [
   { city: '芜湖市', spotCount: 86, closedCount: 83, closeRate: 96.51, avgDays: 8.23, rank: 1 },
   { city: '马鞍山市', spotCount: 62, closedCount: 59, closeRate: 95.16, avgDays: 9.15, rank: 2 },
@@ -477,7 +753,9 @@ export const cityRankings: CityStatistics[] = [
   { city: '宿州市', spotCount: 256, closedCount: 196, closeRate: 76.56, avgDays: 22.18, rank: 16 },
 ];
 
-// ==================== 长势分析数据（16市） ====================
+// ============================================================
+// 长势分析数据（16市）
+// ============================================================
 export const growthData: GrowthData[] = [
   { region: '芜湖市', index: 0.91, yoyChange: 9.20, avgIndex: 0.78, rating: '优秀', rank: 1 },
   { region: '滁州市', index: 0.89, yoyChange: 7.80, avgIndex: 0.78, rating: '优秀', rank: 2 },
@@ -497,26 +775,32 @@ export const growthData: GrowthData[] = [
   { region: '宿州市', index: 0.62, yoyChange: -4.90, avgIndex: 0.78, rating: '偏差', rank: 16 },
 ];
 
-// ==================== 月度趋势数据（6个月） ====================
+// ============================================================
+// 月度趋势数据（6个月）
+// ============================================================
 export const monthlyTrend = [
-  { month: '1月', newSpots: 156, closedSpots: 120 },
-  { month: '2月', newSpots: 123, closedSpots: 100 },
+  { month: '1月', newSpots: 156, closedSpots: 134 },
+  { month: '2月', newSpots: 123, closedSpots: 112 },
   { month: '3月', newSpots: 89, closedSpots: 95 },
   { month: '4月', newSpots: 67, closedSpots: 78 },
   { month: '5月', newSpots: 45, closedSpots: 56 },
   { month: '6月', newSpots: 23, closedSpots: 34 },
 ];
 
-// ==================== 问题类型分布（5类） ====================
+// ============================================================
+// 问题类型分布（5类）
+// ============================================================
 export const problemTypeDistribution = [
-  { name: '撂荒', value: 34, color: 'var(--chart-1)' },
-  { name: '非粮化', value: 15, color: 'var(--chart-2)' },
-  { name: '疑似割青', value: 10, color: 'var(--chart-3)' },
-  { name: '计划未落实', value: 21, color: 'var(--chart-4)' },
-  { name: '其他', value: 20, color: 'var(--chart-5)' },
+  { name: '撂荒', value: 456, color: 'var(--chart-1)' },
+  { name: '非粮化', value: 312, color: 'var(--chart-2)' },
+  { name: '疑似割青', value: 178, color: 'var(--chart-3)' },
+  { name: '种植计划未落实', value: 134, color: 'var(--chart-4)' },
+  { name: '焚烧秸秆', value: 89, color: 'var(--chart-5)' },
 ];
 
-// ==================== 安徽省各市地图数据（16市，无重复） ====================
+// ============================================================
+// 安徽省各市地图数据（16市）
+// ============================================================
 export const cityMapData = [
   { name: '合肥市', value: 165, pendingCheck: 34, rectifying: 12, closed: 119 },
   { name: '芜湖市', value: 86, pendingCheck: 8, rectifying: 5, closed: 73 },
@@ -536,14 +820,18 @@ export const cityMapData = [
   { name: '宣城市', value: 75, pendingCheck: 10, rectifying: 5, closed: 60 },
 ];
 
-// ==================== 地图图斑列表 ====================
+// ============================================================
+// 地图图斑列表
+// ============================================================
 export const mapSpots = spots.map(spot => ({
   ...spot,
   lng: spot.coordinate.lng,
   lat: spot.coordinate.lat,
 }));
 
-// ==================== 一张图城市统计数据（16市） ====================
+// ============================================================
+// 一张图城市统计数据（16市）
+// ============================================================
 export const cityStats = [
   { city: '合肥市', pending: 34, rectifying: 12, closed: 143, growthDeviation: 8 },
   { city: '芜湖市', pending: 8, rectifying: 5, closed: 83, growthDeviation: 3 },
@@ -563,55 +851,9 @@ export const cityStats = [
   { city: '宣城市', pending: 10, rectifying: 5, closed: 67, growthDeviation: 7 },
 ];
 
-// ==================== 结案审核列表（20条） ====================
-export const caseReviews = [
-  { id: '1', eventNo: 'SJ-2026-012', type: '疑似割青' as const, location: '阜阳市太和县旧县镇宋沟村', city: '阜阳市', completeDate: '2026-06-18', effect: '良好', status: '待审核' as const, reviewOpinion: '经核查确认为正常收割行为，整改措施到位' },
-  { id: '2', eventNo: 'SJ-2026-013', type: '非粮化' as const, location: '宿州市萧县黄口镇杨楼村', city: '宿州市', completeDate: '2026-06-16', effect: '良好', status: '待审核' as const, reviewOpinion: '中药材已清除，已补种玉米，整改效果良好' },
-  { id: '3', eventNo: 'SJ-2026-014', type: '疑似割青' as const, location: '六安市舒城县干汊河镇新陶村', city: '六安市', completeDate: '2026-06-15', effect: '一般', status: '待审核' as const, reviewOpinion: '经核查属正常农事活动，但监测手段需加强' },
-  { id: '4', eventNo: 'SJ-2026-015', type: '种植计划未落实' as const, location: '亳州市蒙城县小涧镇齐山村', city: '亳州市', completeDate: '2026-06-14', effect: '良好', status: '待审核' as const, reviewOpinion: '种植结构调整完成，已落实小麦种植计划' },
-  { id: '5', eventNo: 'SJ-2026-016', type: '非粮化' as const, location: '宣城市泾县丁家桥镇李园村', city: '宣城市', completeDate: '2026-06-13', effect: '良好', status: '待审核' as const, reviewOpinion: '观赏苗木已清除，已补种水稻' },
-  { id: '6', eventNo: 'SJ-2026-017', type: '种植计划未落实' as const, location: '合肥市庐江县同大镇魏荡村', city: '合肥市', completeDate: '2026-06-12', effect: '一般', status: '待审核' as const, reviewOpinion: '莲藕已清除，水稻种植正在推进中' },
-  { id: '7', eventNo: 'SJ-2026-004', type: '撂荒' as const, location: '六安市霍邱县周集镇洪台村', city: '六安市', completeDate: '2026-06-10', effect: '良好', status: '已通过' as const, reviewOpinion: '排灌设施修复完成，水稻已补种，整改效果良好' },
-  { id: '8', eventNo: 'SJ-2026-020', type: '其他' as const, location: '阜阳市阜南县郜台乡刘店村', city: '阜阳市', completeDate: '2026-06-08', effect: '良好', status: '已通过' as const, reviewOpinion: '经核查确认无建筑垃圾倾倒，耕地状态正常' },
-  { id: '9', eventNo: 'SJ-2026-005', type: '疑似割青' as const, location: '合肥市肥东县店埠镇西山驿村', city: '合肥市', completeDate: '2026-06-06', effect: '良好', status: '已通过' as const, reviewOpinion: '割青行为已确认并处理，补种措施到位' },
-  { id: '10', eventNo: 'SJ-2026-019', type: '焚烧秸秆' as const, location: '滁州市明光市潘村镇紫阳村', city: '滁州市', completeDate: '2026-06-04', effect: '良好', status: '已通过' as const, reviewOpinion: '秸秆还田处理完成，禁烧承诺书已签订' },
-  { id: '11', eventNo: 'SJ-2026-018', type: '焚烧秸秆' as const, location: '蚌埠市固镇县连城镇殷里村', city: '蚌埠市', completeDate: '2026-06-02', effect: '一般', status: '已通过' as const, reviewOpinion: '秸秆已处理，但农户禁烧意识仍需加强' },
-  { id: '12', eventNo: 'SJ-2026-008', type: '撂荒' as const, location: '芜湖市南陵县许镇镇仙坊村', city: '芜湖市', completeDate: '2026-05-30', effect: '良好', status: '已通过' as const, reviewOpinion: '排涝设施修建完成，水稻已播种' },
-  { id: '13', eventNo: 'SJ-2026-002', type: '撂荒' as const, location: '阜阳市临泉县鲖城镇杨庄村', city: '阜阳市', completeDate: '2026-05-28', effect: '良好', status: '已通过' as const, reviewOpinion: '土地流转完成，玉米已补种' },
-  { id: '14', eventNo: 'SJ-2026-001', type: '撂荒' as const, location: '蚌埠市怀远县龙亢镇汪圩村', city: '蚌埠市', completeDate: '2026-05-25', effect: '良好', status: '已通过' as const, reviewOpinion: '杂草清除完成，大豆已播种，整改效果良好' },
-  { id: '15', eventNo: 'SJ-2026-009', type: '非粮化' as const, location: '蚌埠市五河县头铺镇凌欧村', city: '蚌埠市', completeDate: '2026-05-22', effect: '一般', status: '已通过' as const, reviewOpinion: '苗木花卉已清除，水稻补种进度需持续关注' },
-  { id: '16', eventNo: 'SJ-2026-010', type: '种植计划未落实' as const, location: '淮南市凤台县新集镇姚湾村', city: '淮南市', completeDate: '2026-05-20', effect: '较差', status: '已退回' as const, rejectReason: '整改措施不到位，水稻种植计划尚未真正落实，需重新整改' },
-  { id: '17', eventNo: 'SJ-2026-011', type: '非粮化' as const, location: '安庆市怀宁县茶岭镇万福村', city: '安庆市', completeDate: '2026-05-18', effect: '较差', status: '已退回' as const, rejectReason: '临时仓储设施尚未完全拆除，地面硬化层未清除，整改不彻底' },
-  { id: '18', eventNo: 'SJ-2026-003', type: '非粮化' as const, location: '宿州市砀山县唐寨镇侯口村', city: '宿州市', completeDate: '2026-05-15', effect: '一般', status: '已退回' as const, rejectReason: '果树清除进度缓慢，补种小麦面积不足，需加快整改' },
-  { id: '19', eventNo: 'SJ-2026-006', type: '撂荒' as const, location: '亳州市涡阳县高炉镇大刘村', city: '亳州市', completeDate: '2026-05-12', effect: '一般', status: '已退回' as const, rejectReason: '仅完成1户土地流转，其余2户撂荒问题尚未解决' },
-  { id: '20', eventNo: 'SJ-2026-007', type: '非粮化' as const, location: '滁州市定远县藕塘镇仁和村', city: '滁州市', completeDate: '2026-05-10', effect: '良好', status: '已通过' as const, reviewOpinion: '鱼塘已回填，耕作层已恢复，水稻补种完成' },
-];
-
-// ==================== 巡查记录列表（20条） ====================
-export const patrols = [
-  { id: '1', patrolNo: 'XC-2026-021', date: '2026-06-20', location: '蚌埠市怀远县龙亢镇汪圩村', city: '蚌埠市', type: '随机抽查', hasProblem: true },
-  { id: '2', patrolNo: 'XC-2026-022', date: '2026-06-19', location: '阜阳市临泉县鲖城镇杨庄村', city: '阜阳市', type: '定点抽查', hasProblem: true },
-  { id: '3', patrolNo: 'XC-2026-023', date: '2026-06-18', location: '宿州市砀山县唐寨镇侯口村', city: '宿州市', type: '专项检查', hasProblem: true },
-  { id: '4', patrolNo: 'XC-2026-024', date: '2026-06-17', location: '六安市霍邱县周集镇洪台村', city: '六安市', type: '随机抽查', hasProblem: true },
-  { id: '5', patrolNo: 'XC-2026-025', date: '2026-06-16', location: '合肥市肥东县店埠镇西山驿村', city: '合肥市', type: '定点抽查', hasProblem: true },
-  { id: '6', patrolNo: 'XC-2026-026', date: '2026-06-15', location: '亳州市涡阳县高炉镇大刘村', city: '亳州市', type: '随机抽查', hasProblem: true },
-  { id: '7', patrolNo: 'XC-2026-027', date: '2026-06-14', location: '滁州市定远县藕塘镇仁和村', city: '滁州市', type: '专项检查', hasProblem: true },
-  { id: '8', patrolNo: 'XC-2026-028', date: '2026-06-13', location: '芜湖市南陵县许镇镇仙坊村', city: '芜湖市', type: '随机抽查', hasProblem: false },
-  { id: '9', patrolNo: 'XC-2026-029', date: '2026-06-12', location: '蚌埠市五河县头铺镇凌欧村', city: '蚌埠市', type: '定点抽查', hasProblem: true },
-  { id: '10', patrolNo: 'XC-2026-030', date: '2026-06-11', location: '淮南市凤台县新集镇姚湾村', city: '淮南市', type: '随机抽查', hasProblem: true },
-  { id: '11', patrolNo: 'XC-2026-031', date: '2026-06-10', location: '安庆市怀宁县茶岭镇万福村', city: '安庆市', type: '定点抽查', hasProblem: true },
-  { id: '12', patrolNo: 'XC-2026-032', date: '2026-06-09', location: '阜阳市太和县旧县镇宋沟村', city: '阜阳市', type: '随机抽查', hasProblem: false },
-  { id: '13', patrolNo: 'XC-2026-033', date: '2026-06-08', location: '宿州市萧县黄口镇杨楼村', city: '宿州市', type: '专项检查', hasProblem: true },
-  { id: '14', patrolNo: 'XC-2026-034', date: '2026-06-07', location: '六安市舒城县干汊河镇新陶村', city: '六安市', type: '随机抽查', hasProblem: false },
-  { id: '15', patrolNo: 'XC-2026-035', date: '2026-06-06', location: '亳州市蒙城县小涧镇齐山村', city: '亳州市', type: '定点抽查', hasProblem: true },
-  { id: '16', patrolNo: 'XC-2026-036', date: '2026-06-05', location: '宣城市泾县丁家桥镇李园村', city: '宣城市', type: '随机抽查', hasProblem: false },
-  { id: '17', patrolNo: 'XC-2026-037', date: '2026-06-04', location: '合肥市庐江县同大镇魏荡村', city: '合肥市', type: '随机抽查', hasProblem: false },
-  { id: '18', patrolNo: 'XC-2026-038', date: '2026-06-03', location: '蚌埠市固镇县连城镇殷里村', city: '蚌埠市', type: '定点抽查', hasProblem: false },
-  { id: '19', patrolNo: 'XC-2026-039', date: '2026-06-02', location: '滁州市明光市潘村镇紫阳村', city: '滁州市', type: '随机抽查', hasProblem: false },
-  { id: '20', patrolNo: 'XC-2026-040', date: '2026-06-01', location: '阜阳市阜南县郜台乡刘店村', city: '阜阳市', type: '专项检查', hasProblem: false },
-];
-
-// ==================== 长势分析数据（16市，用于苗情监测页面） ====================
+// ============================================================
+// 长势分析数据（16市，用于苗情监测页面）
+// ============================================================
 export const growthAnalysis = [
   { city: '芜湖市', index: 0.91, trend: 9.20, rating: '优秀' },
   { city: '滁州市', index: 0.89, trend: 7.80, rating: '优秀' },
