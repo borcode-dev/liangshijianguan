@@ -13,6 +13,8 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { spots as mockSpots } from '@/lib/data/mock-data';
+import { useCityFilter, filterByCityWithCity } from '@/lib/data/filter';
+import { useAuth } from '@/lib/auth';
 import { getStorageData, setStorageData } from '@/lib/storage';
 import { toast } from 'sonner';
 import { Send, Eye } from 'lucide-react';
@@ -21,6 +23,7 @@ import type { Spot } from '@/types';
 const STORAGE_KEY = 'closed-loop-assign-data';
 
 export default function TaskAssignPage() {
+  const userCity = useCityFilter();
   const [spotList, setSpotList] = useState<Spot[]>([]);
   const [selectedSpotIds, setSelectedSpotIds] = useState<string[]>([]);
   const [showAssignDialog, setShowAssignDialog] = useState(false);
@@ -33,8 +36,8 @@ export default function TaskAssignPage() {
     if (stored.length > 0) {
       setSpotList(stored);
     } else {
-      setSpotList(mockSpots);
-      setStorageData(STORAGE_KEY, mockSpots);
+      setSpotList(filterByCityWithCity(mockSpots, userCity));
+      setStorageData(STORAGE_KEY, filterByCityWithCity(mockSpots, userCity));
     }
   }, []);
 

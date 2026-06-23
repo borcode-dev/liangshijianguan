@@ -24,6 +24,8 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { spots as mockSpots } from '@/lib/data/mock-data';
+import { useCityFilter, filterByCityWithCity } from '@/lib/data/filter';
+import { useAuth } from '@/lib/auth';
 import { getStorageData, setStorageData } from '@/lib/storage';
 import { toast } from 'sonner';
 import { Download, Search, Eye, Send } from 'lucide-react';
@@ -36,12 +38,14 @@ export default function SpotsPage() {
   // 从 localStorage 初始化数据
   const [spots, setSpots] = useState<Spot[]>([]);
   const [initialized, setInitialized] = useState(false);
+  const userCity = useCityFilter();
 
   useEffect(() => {
-    const stored = getStorageData<Spot[]>(STORAGE_KEY, mockSpots);
-    setSpots(stored);
+    const stored = getStorageData<Spot[]>(STORAGE_KEY, filterByCityWithCity(mockSpots, userCity));
+    const filtered = userCity ? stored.filter((s: Spot) => s.city === userCity) : stored;
+    setSpots(filtered);
     setInitialized(true);
-  }, []);
+  }, [userCity]);
 
   // 筛选状态
   const [activeTab, setActiveTab] = useState('all');
@@ -116,12 +120,7 @@ export default function SpotsPage() {
 
       // 区域过滤
       const matchRegion =
-        filterRegion === 'all' ||
-        (filterRegion === 'bengbu' && spot.city === '蚌埠市') ||
-        (filterRegion === 'fuyang' && spot.city === '阜阳市') ||
-        (filterRegion === 'suzhou' && spot.city === '宿州市') ||
-        (filterRegion === 'chuzhou' && spot.city === '滁州市') ||
-        (filterRegion === 'hefei' && spot.city === '合肥市');
+        filterRegion === 'all' || spot.city === filterRegion;
 
       return matchTab && matchSearch && matchProblemType && matchRiskLevel && matchStatus && matchRegion;
     });
@@ -275,11 +274,22 @@ export default function SpotsPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">全部地区</SelectItem>
-                <SelectItem value="bengbu">蚌埠市</SelectItem>
-                <SelectItem value="fuyang">阜阳市</SelectItem>
-                <SelectItem value="suzhou">宿州市</SelectItem>
-                <SelectItem value="chuzhou">滁州市</SelectItem>
-                <SelectItem value="hefei">合肥市</SelectItem>
+                <SelectItem value="合肥市">合肥市</SelectItem>
+                <SelectItem value="芜湖市">芜湖市</SelectItem>
+                <SelectItem value="蚌埠市">蚌埠市</SelectItem>
+                <SelectItem value="淮南市">淮南市</SelectItem>
+                <SelectItem value="马鞍山市">马鞍山市</SelectItem>
+                <SelectItem value="淮北市">淮北市</SelectItem>
+                <SelectItem value="铜陵市">铜陵市</SelectItem>
+                <SelectItem value="安庆市">安庆市</SelectItem>
+                <SelectItem value="黄山市">黄山市</SelectItem>
+                <SelectItem value="滁州市">滁州市</SelectItem>
+                <SelectItem value="阜阳市">阜阳市</SelectItem>
+                <SelectItem value="宿州市">宿州市</SelectItem>
+                <SelectItem value="六安市">六安市</SelectItem>
+                <SelectItem value="亳州市">亳州市</SelectItem>
+                <SelectItem value="池州市">池州市</SelectItem>
+                <SelectItem value="宣城市">宣城市</SelectItem>
               </SelectContent>
             </Select>
             <div className="relative flex-1">

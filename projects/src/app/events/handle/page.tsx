@@ -133,6 +133,7 @@ export default function EventHandlePage() {
       eventNo: newEventNo,
       eventType: newType,
       location: newLocation,
+      city: '',
       responsiblePerson: newPerson,
       responsibleUnit: newUnit,
       deadline: newDeadline,

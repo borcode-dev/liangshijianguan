@@ -22,6 +22,8 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { ChartLine } from '@/components/shared/charts';
 import { growthAnalysis } from '@/lib/data/mock-data';
+import { useCityFilter, filterByCityWithCity } from '@/lib/data/filter';
+import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 import { Download, TrendingUp, TrendingDown, Minus, Leaf, BarChart3, MapPin } from 'lucide-react';
 
@@ -95,6 +97,11 @@ export default function SeedlingPage() {
   const [filterYear, setFilterYear] = useState('2026');
   const [filterCrop, setFilterCrop] = useState('rice');
   const [filterRegion, setFilterRegion] = useState('all');
+
+  // 城市过滤
+  const userCity = useCityFilter();
+  const { locationText } = useAuth();
+  const filteredGrowthAnalysis = userCity ? growthAnalysis.filter(c => c.city === userCity) : growthAnalysis;
 
   // 详情弹窗
   const [detailOpen, setDetailOpen] = useState(false);
@@ -190,11 +197,22 @@ export default function SeedlingPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">全省</SelectItem>
-            <SelectItem value="bengbu">蚌埠市</SelectItem>
-            <SelectItem value="fuyang">阜阳市</SelectItem>
-            <SelectItem value="hefei">合肥市</SelectItem>
-            <SelectItem value="wuhu">芜湖市</SelectItem>
-            <SelectItem value="chuzhou">滁州市</SelectItem>
+            <SelectItem value="合肥市">合肥市</SelectItem>
+            <SelectItem value="芜湖市">芜湖市</SelectItem>
+            <SelectItem value="蚌埠市">蚌埠市</SelectItem>
+            <SelectItem value="淮南市">淮南市</SelectItem>
+            <SelectItem value="马鞍山市">马鞍山市</SelectItem>
+            <SelectItem value="淮北市">淮北市</SelectItem>
+            <SelectItem value="铜陵市">铜陵市</SelectItem>
+            <SelectItem value="安庆市">安庆市</SelectItem>
+            <SelectItem value="黄山市">黄山市</SelectItem>
+            <SelectItem value="滁州市">滁州市</SelectItem>
+            <SelectItem value="阜阳市">阜阳市</SelectItem>
+            <SelectItem value="宿州市">宿州市</SelectItem>
+            <SelectItem value="六安市">六安市</SelectItem>
+            <SelectItem value="亳州市">亳州市</SelectItem>
+            <SelectItem value="池州市">池州市</SelectItem>
+            <SelectItem value="宣城市">宣城市</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -298,7 +316,7 @@ export default function SeedlingPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {growthAnalysis.map((city, index) => (
+            {filteredGrowthAnalysis.map((city, index) => (
               <div
                 key={city.city}
                 className="flex cursor-pointer items-center gap-4 rounded-lg border p-4 transition-colors hover:bg-muted/50"

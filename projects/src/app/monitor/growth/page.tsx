@@ -31,6 +31,8 @@ import dynamic from 'next/dynamic';
 import { ChartLine } from '@/components/shared/charts';
 import { cityGrowthData } from '@/lib/data/growth-data';
 import { growthData } from '@/lib/data/mock-data';
+import { useCityFilter } from '@/lib/data/filter';
+import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 import { Download, TrendingUp, TrendingDown, BarChart2, MapPin } from 'lucide-react';
 
@@ -110,6 +112,11 @@ export default function GrowthAnalysisPage() {
   const [filterCrop, setFilterCrop] = useState('wheat');
   const [filterRegion, setFilterRegion] = useState('province');
   const [filterBaseline, setFilterBaseline] = useState('lastYear');
+
+  // 城市过滤
+  const userCity = useCityFilter();
+  const { locationText } = useAuth();
+  const filteredGrowthData = userCity ? cityGrowthData.filter(c => c.name === userCity) : cityGrowthData;
 
   // 详情弹窗
   const [detailOpen, setDetailOpen] = useState(false);
@@ -226,9 +233,22 @@ export default function GrowthAnalysisPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="province">全省</SelectItem>
-                <SelectItem value="bengbu">蚌埠市</SelectItem>
-                <SelectItem value="fuyang">阜阳市</SelectItem>
-                <SelectItem value="suzhou">宿州市</SelectItem>
+                <SelectItem value="合肥市">合肥市</SelectItem>
+                <SelectItem value="芜湖市">芜湖市</SelectItem>
+                <SelectItem value="蚌埠市">蚌埠市</SelectItem>
+                <SelectItem value="淮南市">淮南市</SelectItem>
+                <SelectItem value="马鞍山市">马鞍山市</SelectItem>
+                <SelectItem value="淮北市">淮北市</SelectItem>
+                <SelectItem value="铜陵市">铜陵市</SelectItem>
+                <SelectItem value="安庆市">安庆市</SelectItem>
+                <SelectItem value="黄山市">黄山市</SelectItem>
+                <SelectItem value="滁州市">滁州市</SelectItem>
+                <SelectItem value="阜阳市">阜阳市</SelectItem>
+                <SelectItem value="宿州市">宿州市</SelectItem>
+                <SelectItem value="六安市">六安市</SelectItem>
+                <SelectItem value="亳州市">亳州市</SelectItem>
+                <SelectItem value="池州市">池州市</SelectItem>
+                <SelectItem value="宣城市">宣城市</SelectItem>
               </SelectContent>
             </Select>
             <Select value={filterBaseline} onValueChange={setFilterBaseline}>
@@ -344,7 +364,7 @@ export default function GrowthAnalysisPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {cityGrowthData.sort((a, b) => b.index - a.index).map((item, index) => (
+              {filteredGrowthData.sort((a, b) => b.index - a.index).map((item, index) => (
                 <TableRow key={item.name}>
                   <TableCell>
                     <span

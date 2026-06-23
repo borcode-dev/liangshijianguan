@@ -40,6 +40,8 @@ import {
   PaginationNext,
 } from '@/components/ui/pagination';
 import { events as mockEvents } from '@/lib/data/mock-data';
+import { useCityFilter, filterByCityWithCity } from '@/lib/data/filter';
+import { useAuth } from '@/lib/auth';
 import { getStorageData, setStorageData, generateId, generateNo } from '@/lib/storage';
 import { toast } from 'sonner';
 import { Plus, Eye, Camera, MapPin } from 'lucide-react';
@@ -65,6 +67,7 @@ export default function EventReportPage() {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const userCity = useCityFilter();
 
   // 表单状态
   const [formType, setFormType] = useState('');
@@ -84,8 +87,8 @@ export default function EventReportPage() {
     if (stored.length > 0) {
       setEventList(stored);
     } else {
-      setEventList(mockEvents);
-      setStorageData(STORAGE_KEY, mockEvents);
+      setEventList(filterByCityWithCity(mockEvents, userCity));
+      setStorageData(STORAGE_KEY, filterByCityWithCity(mockEvents, userCity));
     }
   }, []);
 
@@ -211,11 +214,22 @@ export default function EventReportPage() {
                       <SelectValue placeholder="选择市" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="合肥市">合肥市</SelectItem>
+                      <SelectItem value="芜湖市">芜湖市</SelectItem>
                       <SelectItem value="蚌埠市">蚌埠市</SelectItem>
+                      <SelectItem value="淮南市">淮南市</SelectItem>
+                      <SelectItem value="马鞍山市">马鞍山市</SelectItem>
+                      <SelectItem value="淮北市">淮北市</SelectItem>
+                      <SelectItem value="铜陵市">铜陵市</SelectItem>
+                      <SelectItem value="安庆市">安庆市</SelectItem>
+                      <SelectItem value="黄山市">黄山市</SelectItem>
+                      <SelectItem value="滁州市">滁州市</SelectItem>
                       <SelectItem value="阜阳市">阜阳市</SelectItem>
                       <SelectItem value="宿州市">宿州市</SelectItem>
-                      <SelectItem value="合肥市">合肥市</SelectItem>
-                      <SelectItem value="滁州市">滁州市</SelectItem>
+                      <SelectItem value="六安市">六安市</SelectItem>
+                      <SelectItem value="亳州市">亳州市</SelectItem>
+                      <SelectItem value="池州市">池州市</SelectItem>
+                      <SelectItem value="宣城市">宣城市</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -226,11 +240,31 @@ export default function EventReportPage() {
                       <SelectValue placeholder="选择县" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="怀远县">怀远县</SelectItem>
-                      <SelectItem value="临泉县">临泉县</SelectItem>
-                      <SelectItem value="埇桥区">埇桥区</SelectItem>
+                      <SelectItem value="肥东县">肥东县</SelectItem>
                       <SelectItem value="肥西县">肥西县</SelectItem>
+                      <SelectItem value="长丰县">长丰县</SelectItem>
+                      <SelectItem value="庐江县">庐江县</SelectItem>
+                      <SelectItem value="怀远县">怀远县</SelectItem>
+                      <SelectItem value="五河县">五河县</SelectItem>
+                      <SelectItem value="固镇县">固镇县</SelectItem>
+                      <SelectItem value="临泉县">临泉县</SelectItem>
+                      <SelectItem value="太和县">太和县</SelectItem>
+                      <SelectItem value="阜南县">阜南县</SelectItem>
+                      <SelectItem value="颍上县">颍上县</SelectItem>
+                      <SelectItem value="埇桥区">埇桥区</SelectItem>
+                      <SelectItem value="砀山县">砀山县</SelectItem>
+                      <SelectItem value="萧县">萧县</SelectItem>
                       <SelectItem value="定远县">定远县</SelectItem>
+                      <SelectItem value="天长市">天长市</SelectItem>
+                      <SelectItem value="凤台县">凤台县</SelectItem>
+                      <SelectItem value="寿县">寿县</SelectItem>
+                      <SelectItem value="濉溪县">濉溪县</SelectItem>
+                      <SelectItem value="当涂县">当涂县</SelectItem>
+                      <SelectItem value="含山县">含山县</SelectItem>
+                      <SelectItem value="霍邱县">霍邱县</SelectItem>
+                      <SelectItem value="舒城县">舒城县</SelectItem>
+                      <SelectItem value="涡阳县">涡阳县</SelectItem>
+                      <SelectItem value="蒙城县">蒙城县</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -246,6 +280,13 @@ export default function EventReportPage() {
                       <SelectItem value="大店镇">大店镇</SelectItem>
                       <SelectItem value="上派镇">上派镇</SelectItem>
                       <SelectItem value="藕塘镇">藕塘镇</SelectItem>
+                      <SelectItem value="店埠镇">店埠镇</SelectItem>
+                      <SelectItem value="水湖镇">水湖镇</SelectItem>
+                      <SelectItem value="唐寨镇">唐寨镇</SelectItem>
+                      <SelectItem value="曹村镇">曹村镇</SelectItem>
+                      <SelectItem value="连城镇">连城镇</SelectItem>
+                      <SelectItem value="新集镇">新集镇</SelectItem>
+                      <SelectItem value="张营村">张营村</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

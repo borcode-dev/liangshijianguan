@@ -101,6 +101,7 @@ export interface InspectionTask {
   eventNo?: string;
   type: ProblemType;
   location: string;
+  city: string;
   area: number;
   assignTime: string;
   deadline: string;
@@ -117,6 +118,7 @@ export interface RectificationTask {
   eventNo: string;
   eventType: ProblemType;
   location: string;
+  city: string;
   responsiblePerson: string;
   responsibleUnit: string;
   deadline: string;
@@ -134,6 +136,7 @@ export interface InspectionRecord {
   unit: string;
   type: '随机抽查' | '定点抽查';
   location: string;
+  city: string;
   result: '发现问题' | '未发现问题';
   problemDescription?: string;
   photos: string[];
@@ -185,5 +188,6 @@ export interface Alert {
   type: 'danger' | 'warning' | 'info';
   message: string;
   time: string;
+  city?: string;
   action?: string;
 }

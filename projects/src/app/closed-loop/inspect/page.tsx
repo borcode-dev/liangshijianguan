@@ -21,6 +21,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { inspectionTasks as mockTasks, spots as mockSpots } from '@/lib/data/mock-data';
+import { useCityFilter, filterByCityWithCity } from '@/lib/data/filter';
+import { useAuth } from '@/lib/auth';
 import { getStorageData, setStorageData } from '@/lib/storage';
 import { toast } from 'sonner';
 import { Bell, Eye, UserPlus, ClipboardCheck, AlertTriangle, Download } from 'lucide-react';
@@ -29,6 +31,7 @@ import type { InspectionTask, Spot } from '@/types';
 const STORAGE_KEY = 'closed-loop-inspect-data';
 
 export default function InspectManagePage() {
+  const userCity = useCityFilter();
   const [taskList, setTaskList] = useState<InspectionTask[]>([]);
   const [spotList, setSpotList] = useState<Spot[]>([]);
   const [showDispatchDialog, setShowDispatchDialog] = useState(false);
@@ -44,14 +47,14 @@ export default function InspectManagePage() {
     if (storedTasks.length > 0) {
       setTaskList(storedTasks);
     } else {
-      setTaskList(mockTasks);
-      setStorageData(STORAGE_KEY + '-tasks', mockTasks);
+      setTaskList(filterByCityWithCity(mockTasks, userCity));
+      setStorageData(STORAGE_KEY + '-tasks', filterByCityWithCity(mockTasks, userCity));
     }
     if (storedSpots.length > 0) {
       setSpotList(storedSpots);
     } else {
-      setSpotList(mockSpots);
-      setStorageData(STORAGE_KEY + '-spots', mockSpots);
+      setSpotList(filterByCityWithCity(mockSpots, userCity));
+      setStorageData(STORAGE_KEY + '-spots', filterByCityWithCity(mockSpots, userCity));
     }
   }, []);
 

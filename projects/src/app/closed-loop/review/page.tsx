@@ -31,6 +31,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { caseReviews as mockReviews } from '@/lib/data/mock-data';
+import { useCityFilter, filterByCityWithCity } from '@/lib/data/filter';
+import { useAuth } from '@/lib/auth';
 import { getStorageData, setStorageData } from '@/lib/storage';
 import { toast } from 'sonner';
 import { Eye, CheckCircle, XCircle, FileCheck } from 'lucide-react';
@@ -44,6 +46,7 @@ interface CaseReviewItem {
   eventNo: string;
   type: ProblemType;
   location: string;
+  city?: string;
   completeDate: string;
   effect: string;
   status: '待审核' | '已通过' | '已退回';
@@ -52,6 +55,7 @@ interface CaseReviewItem {
 }
 
 export default function CaseReviewPage() {
+  const userCity = useCityFilter();
   const [reviewList, setReviewList] = useState<CaseReviewItem[]>([]);
   const [showReviewDialog, setShowReviewDialog] = useState(false);
   const [showCloseDialog, setShowCloseDialog] = useState(false);
@@ -70,8 +74,8 @@ export default function CaseReviewPage() {
     if (stored.length > 0) {
       setReviewList(stored);
     } else {
-      setReviewList(mockReviews as CaseReviewItem[]);
-      setStorageData(STORAGE_KEY, mockReviews);
+      setReviewList(filterByCityWithCity(mockReviews as CaseReviewItem[], userCity));
+      setStorageData(STORAGE_KEY, filterByCityWithCity(mockReviews as CaseReviewItem[], userCity));
     }
   }, []);
 
@@ -96,6 +100,7 @@ export default function CaseReviewPage() {
       eventNo: item.eventNo,
       type: item.type,
       location: item.location,
+      city: item.city || '',
       area: 0,
       deadline: item.completeDate,
       status: '已完成' as const,

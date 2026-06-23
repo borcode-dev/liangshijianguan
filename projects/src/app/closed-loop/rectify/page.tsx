@@ -32,6 +32,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { rectificationTasks as mockTasks, spots as mockSpots } from '@/lib/data/mock-data';
+import { useCityFilter, filterByCityWithCity } from '@/lib/data/filter';
+import { useAuth } from '@/lib/auth';
 import { getStorageData, setStorageData, generateId, generateNo } from '@/lib/storage';
 import { toast } from 'sonner';
 import { Download, Bell, Eye, Clock, AlertTriangle, CheckCircle2, Plus, CheckCheck } from 'lucide-react';
@@ -40,6 +42,7 @@ import type { Spot, RectificationTask, ProblemType } from '@/types';
 const STORAGE_KEY = 'closed-loop-rectify-data';
 
 export default function RectifyManagePage() {
+  const userCity = useCityFilter();
   const [taskList, setTaskList] = useState<RectificationTask[]>([]);
   const [spotList, setSpotList] = useState<Spot[]>([]);
   const [showRectifyDialog, setShowRectifyDialog] = useState(false);
@@ -69,14 +72,14 @@ export default function RectifyManagePage() {
     if (storedTasks.length > 0) {
       setTaskList(storedTasks);
     } else {
-      setTaskList(mockTasks);
-      setStorageData(STORAGE_KEY + '-tasks', mockTasks);
+      setTaskList(filterByCityWithCity(mockTasks, userCity));
+      setStorageData(STORAGE_KEY + '-tasks', filterByCityWithCity(mockTasks, userCity));
     }
     if (storedSpots.length > 0) {
       setSpotList(storedSpots);
     } else {
-      setSpotList(mockSpots);
-      setStorageData(STORAGE_KEY + '-spots', mockSpots);
+      setSpotList(filterByCityWithCity(mockSpots, userCity));
+      setStorageData(STORAGE_KEY + '-spots', filterByCityWithCity(mockSpots, userCity));
     }
   }, []);
 
@@ -137,6 +140,7 @@ export default function RectifyManagePage() {
       eventNo: selectedSpot?.spotNo || generateNo('SJ'),
       eventType: selectedSpot?.problemType || '撂荒',
       location: selectedSpot?.location || '',
+      city: selectedSpot?.city || '',
       responsiblePerson: data.responsible,
       responsibleUnit: data.responsible === 'owner' ? '地块经营权人' : data.responsible === 'village' ? '村委会' : '乡镇政府',
       deadline: data.deadline,

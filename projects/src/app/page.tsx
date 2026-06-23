@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { PageHeader, AlertDetailDialog } from '@/components/shared';
 import { StatCard } from '@/components/shared';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +12,10 @@ import {
   alerts,
   citySpotDistribution,
   spotProcessProgress,
+  spots,
 } from '@/lib/data/mock-data';
+import { useCityFilter, filterByCityWithCity, filterByRegion } from '@/lib/data/filter';
+import { useAuth } from '@/lib/auth';
 import {
   AlertTriangle,
   MapPin,
@@ -26,6 +29,26 @@ import {
 import Link from 'next/link';
 
 export default function HomePage() {
+  const userCity = useCityFilter();
+  const { locationText } = useAuth();
+
+  const filteredAlerts = filterByCityWithCity(alerts, userCity);
+  const filteredCityDistribution = userCity ? citySpotDistribution.filter(c => c.city === userCity) : citySpotDistribution;
+
+  const cityHomeStats = useMemo(() => {
+    if (!userCity) return homeStatistics;
+    const citySpots = filterByCityWithCity(spots, userCity);
+    return {
+      totalSpots: citySpots.length,
+      pendingCheck: citySpots.filter(s => s.status === '待核查' || s.status === '待下发').length,
+      rectifying: citySpots.filter(s => s.status === '整改中').length,
+      closedThisMonth: citySpots.filter(s => s.status === '已结案').length,
+      newThisMonth: Math.round(citySpots.length * 0.15),
+      avgProcessDays: 12.50,
+      overdueCount: citySpots.filter(s => s.status === '待核查' && s.deadline && new Date(s.deadline) < new Date()).length,
+    };
+  }, [userCity]);
+
   const [showAlertDialog, setShowAlertDialog] = useState(false);
   const [selectedAlert, setSelectedAlert] = useState<{
     id: string;
@@ -53,7 +76,7 @@ export default function HomePage() {
       {/* 页面标题 */}
       <PageHeader
         title="粮食安全监管首页"
-        description="当前层级：安徽省 | 数据更新时间：2026-06-06 17:00"
+        description={`当前层级：${locationText} | 数据更新时间：2026-06-06 17:00`}
         actions={
           <div className="flex gap-2">
             <Button variant="outline" size="sm">
@@ -72,9 +95,9 @@ export default function HomePage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="疑似图斑总数"
-          value={homeStatistics.totalSpots.toLocaleString() + '个'}
+          value={cityHomeStats.totalSpots.toLocaleString() + '个'}
           trend={{
-            value: homeStatistics.newThisMonth,
+            value: cityHomeStats.newThisMonth,
             label: '本月新增',
             type: 'up',
           }}
@@ -82,9 +105,9 @@ export default function HomePage() {
         />
         <StatCard
           title="待核查图斑"
-          value={homeStatistics.pendingCheck.toLocaleString() + '个'}
+          value={cityHomeStats.pendingCheck.toLocaleString() + '个'}
           trend={{
-            value: Math.round((homeStatistics.pendingCheck / homeStatistics.totalSpots) * 100),
+            value: Math.round((cityHomeStats.pendingCheck / cityHomeStats.totalSpots) * 100),
             label: '%',
             type: 'neutral',
           }}
@@ -92,9 +115,9 @@ export default function HomePage() {
         />
         <StatCard
           title="整改中事件"
-          value={homeStatistics.rectifying.toLocaleString() + '个'}
+          value={cityHomeStats.rectifying.toLocaleString() + '个'}
           trend={{
-            value: Math.round((homeStatistics.rectifying / homeStatistics.totalSpots) * 100),
+            value: Math.round((cityHomeStats.rectifying / cityHomeStats.totalSpots) * 100),
             label: '%',
             type: 'neutral',
           }}
@@ -102,9 +125,9 @@ export default function HomePage() {
         />
         <StatCard
           title="本月结案数"
-          value={homeStatistics.closedThisMonth.toLocaleString() + '个'}
+          value={cityHomeStats.closedThisMonth.toLocaleString() + '个'}
           trend={{
-            value: homeStatistics.closedThisMonth,
+            value: cityHomeStats.closedThisMonth,
             label: '已完成',
             type: 'up',
           }}
@@ -121,7 +144,7 @@ export default function HomePage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {alerts.map((alert) => (
+          {filteredAlerts.map((alert) => (
             <div
               key={alert.id}
               className="flex cursor-pointer items-center justify-between rounded-lg border p-3 transition-colors hover:bg-muted/50"
@@ -211,11 +234,11 @@ export default function HomePage() {
             <div className="h-[280px]">
               <ChartBar
                 data={{
-                  labels: citySpotDistribution.slice(0, 7).map((item) => item.city),
+                  labels: filteredCityDistribution.slice(0, 7).map((item) => item.city),
                   datasets: [
                     {
                       label: '图斑数量',
-                      data: citySpotDistribution.slice(0, 7).map((item) => item.count),
+                      data: filteredCityDistribution.slice(0, 7).map((item) => item.count),
                       backgroundColor: 'oklch(0.45 0.15 250)',
                       borderRadius: 4,
                     },

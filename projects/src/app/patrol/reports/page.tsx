@@ -37,6 +37,8 @@ import {
   PaginationNext,
 } from '@/components/ui/pagination';
 import { getStorageData, setStorageData } from '@/lib/storage';
+import { useCityFilter } from '@/lib/data/filter';
+import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 import { FileDown, Printer, Search } from 'lucide-react';
 
@@ -46,6 +48,7 @@ interface PatrolReport {
   date: string;
   inspector: string;
   region: string;
+  city: string;
   type: string;
   locations: number;
   issues: number;
@@ -60,6 +63,7 @@ const initialReports: PatrolReport[] = [
     date: '2026-06-09',
     inspector: '省级巡查员A',
     region: '蚌埠市怀远县',
+    city: '蚌埠市',
     type: '随机抽查',
     locations: 5,
     issues: 2,
@@ -71,6 +75,7 @@ const initialReports: PatrolReport[] = [
     date: '2026-06-08',
     inspector: '省级巡查员B',
     region: '阜阳市临泉县',
+    city: '阜阳市',
     type: '定点抽查',
     locations: 3,
     issues: 1,
@@ -82,6 +87,7 @@ const initialReports: PatrolReport[] = [
     date: '2026-06-07',
     inspector: '省级巡查员C',
     region: '宿州市埇桥区',
+    city: '宿州市',
     type: '随机抽查',
     locations: 4,
     issues: 0,
@@ -93,6 +99,7 @@ const initialReports: PatrolReport[] = [
     date: '2026-06-06',
     inspector: '省级巡查员A',
     region: '合肥市肥西县',
+    city: '合肥市',
     type: '专项检查',
     locations: 6,
     issues: 3,
@@ -104,6 +111,7 @@ const initialReports: PatrolReport[] = [
     date: '2026-06-05',
     inspector: '省级巡查员D',
     region: '滁州市定远县',
+    city: '滁州市',
     type: '随机抽查',
     locations: 4,
     issues: 1,
@@ -115,6 +123,7 @@ const initialReports: PatrolReport[] = [
     date: '2026-06-04',
     inspector: '省级巡查员B',
     region: '蚌埠市固镇县',
+    city: '蚌埠市',
     type: '定点抽查',
     locations: 3,
     issues: 0,
@@ -126,6 +135,7 @@ const initialReports: PatrolReport[] = [
     date: '2026-06-03',
     inspector: '省级巡查员C',
     region: '阜阳市太和县',
+    city: '阜阳市',
     type: '随机抽查',
     locations: 5,
     issues: 2,
@@ -137,6 +147,7 @@ const initialReports: PatrolReport[] = [
 const STORAGE_KEY = 'patrol-reports';
 
 export default function PatrolReportsPage() {
+  const userCity = useCityFilter();
   const [reports, setReports] = useState<PatrolReport[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRegion, setFilterRegion] = useState('all');
@@ -151,8 +162,11 @@ export default function PatrolReportsPage() {
     setReports(stored);
   }, []);
 
+  // 按城市过滤
+  const cityFilteredReports = userCity ? reports.filter(r => r.city === userCity) : reports;
+
   // 筛选
-  const filteredReports = reports.filter((report) => {
+  const filteredReports = cityFilteredReports.filter((report) => {
     const matchesSearch =
       report.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       report.region.includes(searchTerm) ||
@@ -217,11 +231,22 @@ export default function PatrolReportsPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">全部地区</SelectItem>
+                <SelectItem value="合肥市">合肥市</SelectItem>
+                <SelectItem value="芜湖市">芜湖市</SelectItem>
                 <SelectItem value="蚌埠市">蚌埠市</SelectItem>
+                <SelectItem value="淮南市">淮南市</SelectItem>
+                <SelectItem value="马鞍山市">马鞍山市</SelectItem>
+                <SelectItem value="淮北市">淮北市</SelectItem>
+                <SelectItem value="铜陵市">铜陵市</SelectItem>
+                <SelectItem value="安庆市">安庆市</SelectItem>
+                <SelectItem value="黄山市">黄山市</SelectItem>
+                <SelectItem value="滁州市">滁州市</SelectItem>
                 <SelectItem value="阜阳市">阜阳市</SelectItem>
                 <SelectItem value="宿州市">宿州市</SelectItem>
-                <SelectItem value="合肥市">合肥市</SelectItem>
-                <SelectItem value="滁州市">滁州市</SelectItem>
+                <SelectItem value="六安市">六安市</SelectItem>
+                <SelectItem value="亳州市">亳州市</SelectItem>
+                <SelectItem value="池州市">池州市</SelectItem>
+                <SelectItem value="宣城市">宣城市</SelectItem>
               </SelectContent>
             </Select>
             <Select value={filterType} onValueChange={(v) => { setFilterType(v); setCurrentPage(1); }}>
@@ -246,14 +271,14 @@ export default function PatrolReportsPage() {
       <div className="grid grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold">{reports.length}</div>
+            <div className="text-2xl font-bold">{cityFilteredReports.length}</div>
             <div className="text-sm text-muted-foreground">报告总数</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold">
-              {reports.reduce((sum, r) => sum + r.locations, 0)}
+              {cityFilteredReports.reduce((sum, r) => sum + r.locations, 0)}
             </div>
             <div className="text-sm text-muted-foreground">抽查地块数</div>
           </CardContent>
@@ -261,7 +286,7 @@ export default function PatrolReportsPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold text-[#F56C6C]">
-              {reports.reduce((sum, r) => sum + r.issues, 0)}
+              {cityFilteredReports.reduce((sum, r) => sum + r.issues, 0)}
             </div>
             <div className="text-sm text-muted-foreground">发现问题数</div>
           </CardContent>
@@ -269,7 +294,7 @@ export default function PatrolReportsPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold text-[#67C23A]">
-              {reports.filter((r) => r.issues === 0).length}
+              {cityFilteredReports.filter((r) => r.issues === 0).length}
             </div>
             <div className="text-sm text-muted-foreground">无问题报告数</div>
           </CardContent>

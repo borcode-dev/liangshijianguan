@@ -33,6 +33,8 @@ import {
   monthlyTrend,
   cityRankings,
 } from '@/lib/data/mock-data';
+import { useCityFilter, filterByCityWithCity } from '@/lib/data/filter';
+import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 import {
   Download,
@@ -63,11 +65,16 @@ const pieBorderColors = [
 ];
 
 export default function StatisticsPage() {
+  const userCity = useCityFilter();
+  const { locationText } = useAuth();
   const [filterYear, setFilterYear] = useState('2026');
   const [filterType, setFilterType] = useState('all');
   const [filterRegion, setFilterRegion] = useState('all');
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedCity, setSelectedCity] = useState<string>('');
+
+  // 按城市过滤
+  const filteredCityRankings = userCity ? cityRankings.filter(c => c.city === userCity) : cityRankings;
 
   // 饼图数据
   const pieData = {
@@ -178,7 +185,7 @@ export default function StatisticsPage() {
   };
 
   // 获取当前选中城市的详情数据
-  const selectedCityData = cityRankings.find((c) => c.city === selectedCity);
+  const selectedCityData = filteredCityRankings.find((c) => c.city === selectedCity);
 
   return (
     <div className="space-y-6">
@@ -228,11 +235,22 @@ export default function StatisticsPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">全省</SelectItem>
+            <SelectItem value="合肥市">合肥市</SelectItem>
+            <SelectItem value="芜湖市">芜湖市</SelectItem>
             <SelectItem value="蚌埠市">蚌埠市</SelectItem>
+            <SelectItem value="淮南市">淮南市</SelectItem>
+            <SelectItem value="马鞍山市">马鞍山市</SelectItem>
+            <SelectItem value="淮北市">淮北市</SelectItem>
+            <SelectItem value="铜陵市">铜陵市</SelectItem>
+            <SelectItem value="安庆市">安庆市</SelectItem>
+            <SelectItem value="黄山市">黄山市</SelectItem>
+            <SelectItem value="滁州市">滁州市</SelectItem>
             <SelectItem value="阜阳市">阜阳市</SelectItem>
             <SelectItem value="宿州市">宿州市</SelectItem>
-            <SelectItem value="合肥市">合肥市</SelectItem>
-            <SelectItem value="滁州市">滁州市</SelectItem>
+            <SelectItem value="六安市">六安市</SelectItem>
+            <SelectItem value="亳州市">亳州市</SelectItem>
+            <SelectItem value="池州市">池州市</SelectItem>
+            <SelectItem value="宣城市">宣城市</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -358,7 +376,7 @@ export default function StatisticsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {cityRankings.map((row, index) => (
+              {filteredCityRankings.map((row, index) => (
                 <TableRow key={row.city}>
                   <TableCell className="font-medium">{row.city}</TableCell>
                   <TableCell>{row.spotCount}</TableCell>
