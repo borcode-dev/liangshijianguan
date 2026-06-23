@@ -191,3 +191,52 @@ export interface Alert {
   city?: string;
   action?: string;
 }
+
+// 品种长势对比
+export interface VarietyComparison {
+  varietyName: string;
+  cropType: string;
+  currentIndex: number;
+  baselineIndex: number;
+  changeRate: number;
+  riskLevel: '正常' | '偏低' | '偏差' | '严重';
+  affectedArea: number;
+  mainRegions: string[];
+}
+
+// 区域长势对比
+export interface RegionComparison {
+  regionName: string;
+  parentRegion?: string;
+  level: 'city' | 'county';
+  currentIndex: number;
+  baselineIndex: number;
+  changeRate: number;
+  riskLevel: '正常' | '偏低' | '偏差' | '严重';
+  monitoringArea: number;
+  children?: RegionComparison[];
+}
+
+// 长势风险预警
+export interface GrowthWarning {
+  warningId: string;
+  warningLevel: 'RED' | 'ORANGE' | 'YELLOW';
+  regionName: string;
+  city: string;
+  cropType: string;
+  cropVariety: string;
+  currentIndex: number;
+  lastYearIndex: number;
+  changeRate: number;
+  affectedArea: number;
+  affectedFarmers: number;
+  generateTime: string;
+  status: '待处理' | '已推送' | '已处理' | '已关闭';
+  pushStatus?: string;
+  pushTime?: string;
+  processTime?: string;
+  processUser?: string;
+  processResult?: string;
+  causeAnalysis?: string[];
+  suggestions?: string[];
+}
