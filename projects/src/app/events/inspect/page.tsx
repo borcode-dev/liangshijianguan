@@ -26,6 +26,8 @@ import {
 } from '@/components/ui/dialog';
 import { inspectionTasks as mockTasks } from '@/lib/data/mock-data';
 import { getStorageData, setStorageData } from '@/lib/storage';
+import { useCityFilter, filterByCityWithCity } from '@/lib/data/filter';
+import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 import { Eye, Navigation, Clock, AlertTriangle, MapPin, Camera, CheckCircle2 } from 'lucide-react';
 import type { InspectionTask } from '@/types';
@@ -33,6 +35,7 @@ import type { InspectionTask } from '@/types';
 const STORAGE_KEY = 'events-inspect-data';
 
 export default function EventInspectPage() {
+  const userCity = useCityFilter();
   const [taskList, setTaskList] = useState<InspectionTask[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isInspectOpen, setIsInspectOpen] = useState(false);
@@ -50,9 +53,9 @@ export default function EventInspectPage() {
   useEffect(() => {
     const stored = getStorageData<InspectionTask[]>(STORAGE_KEY, []);
     if (stored.length > 0) {
-      setTaskList(stored);
+      setTaskList(userCity ? stored.filter(t => t.city === userCity) : stored);
     } else {
-      setTaskList(mockTasks);
+      setTaskList(filterByCityWithCity(mockTasks, userCity));
       setStorageData(STORAGE_KEY, mockTasks);
     }
   }, []);

@@ -33,6 +33,8 @@ import {
 } from '@/components/ui/dialog';
 import { rectificationTasks as mockTasks } from '@/lib/data/mock-data';
 import { getStorageData, setStorageData, generateId, generateNo } from '@/lib/storage';
+import { useCityFilter, filterByCityWithCity } from '@/lib/data/filter';
+import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 import { Plus, Eye, Clock, CheckCircle2, AlertTriangle } from 'lucide-react';
 import type { RectificationTask, ProblemType } from '@/types';
@@ -40,6 +42,7 @@ import type { RectificationTask, ProblemType } from '@/types';
 const STORAGE_KEY = 'events-handle-data';
 
 export default function EventHandlePage() {
+  const userCity = useCityFilter();
   const [taskList, setTaskList] = useState<RectificationTask[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isNewDialogOpen, setIsNewDialogOpen] = useState(false);
@@ -66,9 +69,9 @@ export default function EventHandlePage() {
   useEffect(() => {
     const stored = getStorageData<RectificationTask[]>(STORAGE_KEY, []);
     if (stored.length > 0) {
-      setTaskList(stored);
+      setTaskList(userCity ? stored.filter(t => t.city === userCity) : stored);
     } else {
-      setTaskList(mockTasks);
+      setTaskList(filterByCityWithCity(mockTasks, userCity));
       setStorageData(STORAGE_KEY, mockTasks);
     }
   }, []);
@@ -415,6 +418,11 @@ export default function EventHandlePage() {
                     <SelectValue placeholder="选择责任单位" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="肥东县农业农村局">肥东县农业农村局</SelectItem>
+                    <SelectItem value="肥西县农业农村局">肥西县农业农村局</SelectItem>
+                    <SelectItem value="长丰县农业农村局">长丰县农业农村局</SelectItem>
+                    <SelectItem value="庐江县农业农村局">庐江县农业农村局</SelectItem>
+                    <SelectItem value="巢湖市农业农村局">巢湖市农业农村局</SelectItem>
                     <SelectItem value="怀远县农业农村局">怀远县农业农村局</SelectItem>
                     <SelectItem value="临泉县农业农村局">临泉县农业农村局</SelectItem>
                     <SelectItem value="定远县农业农村局">定远县农业农村局</SelectItem>
@@ -528,9 +536,15 @@ export default function EventHandlePage() {
                     <SelectValue placeholder="选择责任单位" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="肥东县农业农村局">肥东县农业农村局</SelectItem>
+                    <SelectItem value="肥西县农业农村局">肥西县农业农村局</SelectItem>
+                    <SelectItem value="长丰县农业农村局">长丰县农业农村局</SelectItem>
+                    <SelectItem value="庐江县农业农村局">庐江县农业农村局</SelectItem>
+                    <SelectItem value="巢湖市农业农村局">巢湖市农业农村局</SelectItem>
                     <SelectItem value="怀远县农业农村局">怀远县农业农村局</SelectItem>
                     <SelectItem value="临泉县农业农村局">临泉县农业农村局</SelectItem>
                     <SelectItem value="定远县农业农村局">定远县农业农村局</SelectItem>
+                    <SelectItem value="埇桥区农业农村局">埇桥区农业农村局</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

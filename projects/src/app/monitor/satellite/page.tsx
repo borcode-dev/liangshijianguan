@@ -30,6 +30,8 @@ import {
 } from '@/components/ui/dialog';
 import { monitorBatches as mockBatches } from '@/lib/data/mock-data';
 import { getStorageData, setStorageData, generateId, generateNo } from '@/lib/storage';
+import { useCityFilter, filterByRegion } from '@/lib/data/filter';
+import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 import { Plus, Download, Search, Eye } from 'lucide-react';
 import type { MonitorBatch } from '@/types';
@@ -38,13 +40,14 @@ const STORAGE_KEY = 'satellite-monitor-batches';
 const PAGE_SIZE = 10;
 
 export default function SatelliteMonitorPage() {
+  const userCity = useCityFilter();
   // 从 localStorage 初始化数据，mock 数据作为回退
   const [batches, setBatches] = useState<MonitorBatch[]>([]);
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
     const stored = getStorageData<MonitorBatch[]>(STORAGE_KEY, mockBatches);
-    setBatches(stored);
+    setBatches(userCity ? stored.filter(b => b.region === userCity || b.region === '全省' || b.region.includes(userCity)) : stored);
     setInitialized(true);
   }, []);
 
@@ -85,10 +88,8 @@ export default function SatelliteMonitorPage() {
       // 区域过滤
       const matchRegion =
         filterRegion === 'all' ||
-        (filterRegion === 'bengbu' && batch.region.includes('蚌埠')) ||
-        (filterRegion === 'fuyang' && batch.region.includes('阜阳')) ||
-        (filterRegion === 'suzhou' && batch.region.includes('宿州')) ||
-        (filterRegion === 'province' && batch.region === '全省');
+        (filterRegion === 'province' && batch.region === '全省') ||
+        batch.region.includes(filterRegion);
 
       return matchSearch && matchYear && matchSource && matchRegion;
     });
@@ -197,9 +198,22 @@ export default function SatelliteMonitorPage() {
               <SelectContent>
                 <SelectItem value="all">全部区域</SelectItem>
                 <SelectItem value="province">全省</SelectItem>
-                <SelectItem value="bengbu">蚌埠市</SelectItem>
-                <SelectItem value="fuyang">阜阳市</SelectItem>
-                <SelectItem value="suzhou">宿州市</SelectItem>
+                <SelectItem value="合肥市">合肥市</SelectItem>
+                <SelectItem value="芜湖市">芜湖市</SelectItem>
+                <SelectItem value="蚌埠市">蚌埠市</SelectItem>
+                <SelectItem value="淮南市">淮南市</SelectItem>
+                <SelectItem value="马鞍山市">马鞍山市</SelectItem>
+                <SelectItem value="淮北市">淮北市</SelectItem>
+                <SelectItem value="铜陵市">铜陵市</SelectItem>
+                <SelectItem value="安庆市">安庆市</SelectItem>
+                <SelectItem value="黄山市">黄山市</SelectItem>
+                <SelectItem value="滁州市">滁州市</SelectItem>
+                <SelectItem value="阜阳市">阜阳市</SelectItem>
+                <SelectItem value="宿州市">宿州市</SelectItem>
+                <SelectItem value="六安市">六安市</SelectItem>
+                <SelectItem value="亳州市">亳州市</SelectItem>
+                <SelectItem value="池州市">池州市</SelectItem>
+                <SelectItem value="宣城市">宣城市</SelectItem>
               </SelectContent>
             </Select>
             <div className="relative flex-1">
